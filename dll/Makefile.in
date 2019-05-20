@@ -1,0 +1,5 @@
+MODULE = cpcsp_proxy.dll
+
+C_SRCS = \
+	api_hook.c \
+	proxy.c
