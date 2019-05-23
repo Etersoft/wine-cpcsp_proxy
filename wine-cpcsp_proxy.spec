@@ -1,15 +1,16 @@
-Name: libwine-etersoft-cpcsp
+Name: wine-cpcsp_proxy
 Version: 0.1
 Release: alt1
 
-Summary: Proxy for using native cpcsp in windows applications with wine
+Summary: Proxy for using native CryptoPro in Windows applications with wine
+
 License: Proprietary
 Group: Emulators
-Url: http://etersoft.ru
+
 Source: %name-%version.tar
 
 %description
-Proxy for using native cpcsp in windows applications with wine.
+Proxy for using native CryptoPro in Windows applications with wine.
 
 BuildRequires: libwine-devel wine
 
@@ -33,4 +34,4 @@ cp /usr/bin/winepath %buildroot/usr/bin/cpcsp_proxy_setup
 
 %changelog
 * Mon May 20 2019 Konstantin Kondratyuk <kondratyuk@altlinux.ru> 0.1-alt1
-- initial build for ALT Linux Sisyphus
+- initial build for ALT Sisyphus
