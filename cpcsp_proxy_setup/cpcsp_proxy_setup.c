@@ -18,8 +18,13 @@
 
 #define WIN32_LEAN_AND_MEAN
 
-#include "config.h"
-#include "wine/port.h"
+//#include "config.h"
+//#include "wine/port.h"
+
+// Hack to define wchar_t with 4 bytes size
+// See C_ASSERT(sizeof(wchar_t) == 4) in code
+#define _WCHAR_T_DEFINED
+typedef signed int wchar_t;
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -33,6 +38,11 @@
 #include <wine/debug.h>
 
 #define SONAME_LIBCAPI20 "/opt/cprocsp/lib/ia32/libcapi20.so"
+
+#define RTLD_LAZY    0x001
+#define RTLD_NOW     0x002
+#define RTLD_GLOBAL  0x100
+
 
 static const char proxy_dll[] = "cpcsp_proxy.dll";
 

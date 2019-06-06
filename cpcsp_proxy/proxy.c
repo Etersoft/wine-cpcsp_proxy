@@ -16,11 +16,12 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#include "config.h"
-#include "wine/port.h"
+//#include "config.h"
+//#include "wine/port.h"
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "windef.h"
 #include "winbase.h"
@@ -28,13 +29,17 @@
 #include "wincrypt.h"
 #include "winnls.h"
 #include "wine/library.h"
-#include "wine/debug.h"
+#include "debug.h"
 
 #include "api_hook.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(crypt);
 
 #define SONAME_LIBSSP "/opt/cprocsp/lib/ia32/libssp.so"
+
+#define RTLD_LAZY    0x001
+#define RTLD_NOW     0x002
+#define RTLD_GLOBAL  0x100
 
 static void *libssp_handle;
 static BOOL (WINAPI *pCryptAcquireContextA)(HCRYPTPROV *,LPCSTR,LPCSTR,DWORD,DWORD);
