@@ -9,21 +9,28 @@ Group: Emulators
 
 Source: %name-%version.tar
 
+BuildRequires: libwine-devel wine
+
+%add_verify_elf_skiplist /usr/lib/wine/cpcsp_proxy.dll.so
+%add_verify_elf_skiplist /usr/lib/wine/cpcsp_proxy_setup.exe.so
+
 %description
 Proxy for using native CryptoPro in Windows applications with wine.
 
-BuildRequires: libwine-devel wine
-
-%set_verify_elf_method textrel=relaxed
 
 %prep
 %setup
 
 %build
+cd cpcsp_proxy/
+%make_build
+cd ../cpcsp_proxy_setup/
+%make_build
 
 %install
 mkdir -p %buildroot/usr/lib/wine
-cp bin/* %buildroot/usr/lib/wine
+cp cpcsp_proxy/cpcsp_proxy.dll.so %buildroot/usr/lib/wine
+cp cpcsp_proxy_setup/cpcsp_proxy_setup.exe.so %buildroot/usr/lib/wine
 mkdir -p %buildroot/usr/bin
 cp /usr/bin/winepath %buildroot/usr/bin/cpcsp_proxy_setup
 
