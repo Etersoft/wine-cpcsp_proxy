@@ -2,7 +2,7 @@
 CC	= winegcc -m32
 CFLAGS	= -O2 -Wall -D__WINESRC__
 DEPS	= Makefile api_hook.h
-OBJ	= api_hook.o proxy.o
+OBJ	= api_hook.o proxy.o cpcsp_proxy.spec
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
