@@ -16,12 +16,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-//#include "config.h"
-//#include "wine/port.h"
-
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <dlfcn.h>
 
 #include "windef.h"
 #include "winbase.h"
@@ -29,49 +27,51 @@
 #include "wincrypt.h"
 #include "winnls.h"
 #include "wine/library.h"
-#include "debug.h"
+#include "wine/debug.h"
 
 #include "api_hook.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(crypt);
 
+#ifdef _WIN64
+#define SONAME_LIBSSP "/opt/cprocsp/lib/amd64/libssp.so"
+#else
 #define SONAME_LIBSSP "/opt/cprocsp/lib/ia32/libssp.so"
-
-#define RTLD_LAZY    0x001
-#define RTLD_NOW     0x002
-#define RTLD_GLOBAL  0x100
+#endif
 
 static void *libssp_handle;
-static BOOL (WINAPI *pCryptAcquireContextA)(HCRYPTPROV *,LPCSTR,LPCSTR,DWORD,DWORD);
-static BOOL (WINAPI *pCryptReleaseContext)(HCRYPTPROV,ULONG_PTR);
-static BOOL (WINAPI *pCryptSetProvParam)(HCRYPTPROV,DWORD,const BYTE *,DWORD);
-static BOOL (WINAPI *pCryptGetProvParam)(HCRYPTPROV,DWORD,BYTE *,DWORD *,DWORD);
-static BOOL (WINAPI *pCryptCreateHash)(HCRYPTPROV,ALG_ID,HCRYPTKEY,DWORD,HCRYPTHASH *);
-static BOOL (WINAPI *pCryptDestroyHash)(HCRYPTHASH);
-static BOOL (WINAPI *pCryptDuplicateHash)(HCRYPTHASH,DWORD *,DWORD,HCRYPTHASH *);
-static BOOL (WINAPI *pCryptSetHashParam)(HCRYPTHASH,DWORD,const BYTE *,DWORD);
-static BOOL (WINAPI *pCryptGetHashParam)(HCRYPTHASH,DWORD,BYTE *pbData,DWORD *,DWORD);
-static BOOL (WINAPI *pCryptGenKey)(HCRYPTPROV,ALG_ID,DWORD,HCRYPTKEY *);
-static BOOL (WINAPI *pCryptGetUserKey)(HCRYPTPROV,DWORD,HCRYPTKEY *);
-static BOOL (WINAPI *pCryptExportKey)(HCRYPTKEY,HCRYPTKEY,DWORD,DWORD,BYTE *,DWORD *);
-static BOOL (WINAPI *pCryptImportKey)(HCRYPTPROV,const BYTE *,DWORD,HCRYPTKEY,DWORD,HCRYPTKEY *);
-static BOOL (WINAPI *pCryptDestroyKey)(HCRYPTKEY);
-static BOOL (WINAPI *pCryptDuplicateKey)(HCRYPTKEY,DWORD *,DWORD,HCRYPTKEY *);
-static BOOL (WINAPI *pCryptSetKeyParam)(HCRYPTKEY,DWORD,const BYTE *,DWORD);
-static BOOL (WINAPI *pCryptGetKeyParam)(HCRYPTKEY,DWORD,BYTE *,DWORD *,DWORD);
-static BOOL (WINAPI *pCryptDeriveKey)(HCRYPTPROV,ALG_ID,HCRYPTHASH,DWORD,HCRYPTKEY *);
-static BOOL (WINAPI *pCryptGenRandom)(HCRYPTPROV,DWORD,BYTE *);
-static BOOL (WINAPI *pCryptEncrypt)(HCRYPTKEY,HCRYPTHASH,BOOL,DWORD,BYTE *,DWORD *,DWORD);
-static BOOL (WINAPI *pCryptDecrypt)(HCRYPTKEY,HCRYPTHASH,BOOL,DWORD,BYTE *,DWORD *);
-static BOOL (WINAPI *pCryptHashData)(HCRYPTHASH,const BYTE *,DWORD,DWORD);
-static BOOL (WINAPI *pCryptHashSessionKey)(HCRYPTHASH,HCRYPTKEY,DWORD);
-static BOOL (WINAPI *pCryptSignHashA)(HCRYPTHASH,DWORD,LPCSTR,DWORD,BYTE *,DWORD *);
-static BOOL (WINAPI *pCryptSignHashW)(HCRYPTHASH,DWORD,LPCWSTR,DWORD,BYTE *,DWORD *);
-static BOOL (WINAPI *pCryptVerifySignatureW)(HCRYPTHASH,const BYTE *,DWORD,HCRYPTKEY,LPCWSTR,DWORD);
-static BOOL (WINAPI *pCryptGetDefaultProviderA)(DWORD,DWORD *,DWORD,LPSTR,DWORD *);
-static BOOL (WINAPI *pGetLastError)(void);
-static BOOL (__cdecl *pRNetConvertPublicKeyInfo)(DWORD,CERT_PUBLIC_KEY_INFO *,ALG_ID,DWORD,BYTE **,DWORD *);
-static BOOL (__cdecl *pRNetEncodePublicKeyAndParameters)(DWORD,LPSTR,BYTE *,DWORD,DWORD,void *,BYTE **,DWORD *,BYTE **,DWORD *);
+
+/* CryptoPro uses default calling convention under linux */
+static BOOL (*pCryptAcquireContextA)(HCRYPTPROV *,LPCSTR,LPCSTR,DWORD,DWORD);
+static BOOL (*pCryptReleaseContext)(HCRYPTPROV,ULONG_PTR);
+static BOOL (*pCryptSetProvParam)(HCRYPTPROV,DWORD,const BYTE *,DWORD);
+static BOOL (*pCryptGetProvParam)(HCRYPTPROV,DWORD,BYTE *,DWORD *,DWORD);
+static BOOL (*pCryptCreateHash)(HCRYPTPROV,ALG_ID,HCRYPTKEY,DWORD,HCRYPTHASH *);
+static BOOL (*pCryptDestroyHash)(HCRYPTHASH);
+static BOOL (*pCryptDuplicateHash)(HCRYPTHASH,DWORD *,DWORD,HCRYPTHASH *);
+static BOOL (*pCryptSetHashParam)(HCRYPTHASH,DWORD,const BYTE *,DWORD);
+static BOOL (*pCryptGetHashParam)(HCRYPTHASH,DWORD,BYTE *pbData,DWORD *,DWORD);
+static BOOL (*pCryptGenKey)(HCRYPTPROV,ALG_ID,DWORD,HCRYPTKEY *);
+static BOOL (*pCryptGetUserKey)(HCRYPTPROV,DWORD,HCRYPTKEY *);
+static BOOL (*pCryptExportKey)(HCRYPTKEY,HCRYPTKEY,DWORD,DWORD,BYTE *,DWORD *);
+static BOOL (*pCryptImportKey)(HCRYPTPROV,const BYTE *,DWORD,HCRYPTKEY,DWORD,HCRYPTKEY *);
+static BOOL (*pCryptDestroyKey)(HCRYPTKEY);
+static BOOL (*pCryptDuplicateKey)(HCRYPTKEY,DWORD *,DWORD,HCRYPTKEY *);
+static BOOL (*pCryptSetKeyParam)(HCRYPTKEY,DWORD,const BYTE *,DWORD);
+static BOOL (*pCryptGetKeyParam)(HCRYPTKEY,DWORD,BYTE *,DWORD *,DWORD);
+static BOOL (*pCryptDeriveKey)(HCRYPTPROV,ALG_ID,HCRYPTHASH,DWORD,HCRYPTKEY *);
+static BOOL (*pCryptGenRandom)(HCRYPTPROV,DWORD,BYTE *);
+static BOOL (*pCryptEncrypt)(HCRYPTKEY,HCRYPTHASH,BOOL,DWORD,BYTE *,DWORD *,DWORD);
+static BOOL (*pCryptDecrypt)(HCRYPTKEY,HCRYPTHASH,BOOL,DWORD,BYTE *,DWORD *);
+static BOOL (*pCryptHashData)(HCRYPTHASH,const BYTE *,DWORD,DWORD);
+static BOOL (*pCryptHashSessionKey)(HCRYPTHASH,HCRYPTKEY,DWORD);
+static BOOL (*pCryptSignHashA)(HCRYPTHASH,DWORD,LPCSTR,DWORD,BYTE *,DWORD *);
+static BOOL (*pCryptSignHashW)(HCRYPTHASH,DWORD,LPCWSTR,DWORD,BYTE *,DWORD *);
+static BOOL (*pCryptVerifySignatureW)(HCRYPTHASH,const BYTE *,DWORD,HCRYPTKEY,LPCWSTR,DWORD);
+static BOOL (*pCryptGetDefaultProviderA)(DWORD,DWORD *,DWORD,LPSTR,DWORD *);
+static BOOL (*pGetLastError)(void);
+static BOOL (*pRNetConvertPublicKeyInfo)(DWORD,CERT_PUBLIC_KEY_INFO *,ALG_ID,DWORD,BYTE **,DWORD *);
+static BOOL (*pRNetEncodePublicKeyAndParameters)(DWORD,LPSTR,BYTE *,DWORD,DWORD,void *,BYTE **,DWORD *,BYTE **,DWORD *);
 
 static HCRYPTPROV hprov_def;
 
@@ -618,8 +618,7 @@ BOOL WINAPI CPSignHash(HCRYPTPROV prov, HCRYPTHASH hash, DWORD keyspec, LPCWSTR 
 
     TRACE("IN: %p len %u\n", signature, *len);
 
-    ret = pCryptSignHashW(hash, keyspec, description, flags, signature, len);
-//    ret = pCryptSignHashA(hash, keyspec, NULL, flags, signature, len);
+    ret = pCryptSignHashA(hash, keyspec, NULL, flags, signature, len);
     if (!ret) SetLastError(pGetLastError());
 
     TRACE("OUT: %p len %u, ret %d, error %#x\n", signature, *len, ret, pGetLastError());
