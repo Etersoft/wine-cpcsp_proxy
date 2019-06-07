@@ -18,17 +18,10 @@
 
 #define WIN32_LEAN_AND_MEAN
 
-//#include "config.h"
-//#include "wine/port.h"
-
-// Hack to define wchar_t with 4 bytes size
-// See C_ASSERT(sizeof(wchar_t) == 4) in code
-#define _WCHAR_T_DEFINED
-typedef signed int wchar_t;
-
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <dlfcn.h>
 
 #define NONAMELESSUNION
 #include <windows.h>
@@ -37,30 +30,25 @@ typedef signed int wchar_t;
 #include <wine/library.h>
 #include <wine/debug.h>
 
+#ifdef _WIN64
+#define SONAME_LIBCAPI20 "/opt/cprocsp/lib/amd64/libcapi20.so"
+#else
 #define SONAME_LIBCAPI20 "/opt/cprocsp/lib/ia32/libcapi20.so"
-
-#define RTLD_LAZY    0x001
-#define RTLD_NOW     0x002
-#define RTLD_GLOBAL  0x100
-
+#endif
 
 static const char proxy_dll[] = "cpcsp_proxy.dll";
 
-/* linux */
-static DWORD (WINAPI *pCertEnumCertificateContextProperties)(PCCERT_CONTEXT,DWORD);
-static PCCERT_CONTEXT (WINAPI *pCertEnumCertificatesInStore)(HCERTSTORE,PCCERT_CONTEXT);
-static BOOL (WINAPI *pCertGetCertificateContextProperty)(PCCERT_CONTEXT,DWORD,void *,DWORD *);
-static DWORD (WINAPI *pCertGetNameStringA)(PCCERT_CONTEXT,DWORD,DWORD,void *,LPSTR,DWORD);
-static HCERTSTORE (WINAPI *pCertOpenStore)(LPCSTR,DWORD,HCRYPTPROV_LEGACY,DWORD,const void *);
-static BOOL (WINAPI *pCertCloseStore)(HCERTSTORE,DWORD);
-static BOOL (WINAPI *pCertControlStore)(HCERTSTORE,DWORD,DWORD,void const *);
-static BOOL (WINAPI *pCryptEnumProvidersA)(DWORD,DWORD *,DWORD,DWORD *,LPSTR,DWORD *);
-static BOOL (WINAPI *pCryptEnumOIDInfo)(DWORD,DWORD,void *,PFN_CRYPT_ENUM_OID_INFO);
-static BOOL (WINAPI *pGetLastError)(void);
-
-/* win32 */
-static BOOL (WINAPI *pCertAddEncodedCertificateToStore)(HCERTSTORE,DWORD,const BYTE *,DWORD,DWORD,PCCERT_CONTEXT *);
-static BOOL (WINAPI *pCertSetCertificateContextProperty)(PCCERT_CONTEXT,DWORD,DWORD,const void *);
+/* CryptoPro uses default calling convention under linux */
+static DWORD (*pCertEnumCertificateContextProperties)(PCCERT_CONTEXT,DWORD);
+static PCCERT_CONTEXT (*pCertEnumCertificatesInStore)(HCERTSTORE,PCCERT_CONTEXT);
+static BOOL (*pCertGetCertificateContextProperty)(PCCERT_CONTEXT,DWORD,void *,DWORD *);
+static DWORD (*pCertGetNameStringA)(PCCERT_CONTEXT,DWORD,DWORD,void *,LPSTR,DWORD);
+static HCERTSTORE (*pCertOpenStore)(LPCSTR,DWORD,HCRYPTPROV_LEGACY,DWORD,const void *);
+static BOOL (*pCertCloseStore)(HCERTSTORE,DWORD);
+static BOOL (*pCertControlStore)(HCERTSTORE,DWORD,DWORD,void const *);
+static BOOL (*pCryptEnumProvidersA)(DWORD,DWORD *,DWORD,DWORD *,LPSTR,DWORD *);
+static BOOL (*pCryptEnumOIDInfo)(DWORD,DWORD,void *,PFN_CRYPT_ENUM_OID_INFO);
+static BOOL (*pGetLastError)(void);
 
 static BOOL verbose = FALSE;
 
@@ -91,51 +79,6 @@ static BOOL load_cpcsp(void)
     LOAD_FUNCPTR(GetLastError);
 #undef LOAD_FUNCPTR
 
-    return TRUE;
-}
-
-static BOOL load_win32(void)
-{
-    HMODULE hmod;
-
-    if (!(hmod = LoadLibraryA("crypt32.dll")))
-    {
-        printf("failed to load %s\n", "crypt32.dll");
-        return FALSE;
-    }
-#define LOAD_FUNCPTR(f) \
-    if ((p##f = (void *)GetProcAddress(hmod, #f)) == NULL) \
-    { \
-        printf("%s not found in %s\n", #f, "crypt32.dll"); \
-        return FALSE; \
-    }
-    LOAD_FUNCPTR(CertEnumCertificateContextProperties);
-    LOAD_FUNCPTR(CertEnumCertificatesInStore);
-    LOAD_FUNCPTR(CertGetCertificateContextProperty);
-    LOAD_FUNCPTR(CertGetNameStringA);
-    LOAD_FUNCPTR(CertOpenStore);
-    LOAD_FUNCPTR(CertCloseStore);
-    LOAD_FUNCPTR(CertControlStore);
-    LOAD_FUNCPTR(CryptEnumOIDInfo);
-
-    LOAD_FUNCPTR(CertAddEncodedCertificateToStore);
-    LOAD_FUNCPTR(CertSetCertificateContextProperty);
-#undef LOAD_FUNCPTR
-
-    if (!(hmod = LoadLibraryA("kernel32.dll")))
-    {
-        printf("failed to load %s\n", "kernel32.dll");
-        return FALSE;
-    }
-#define LOAD_FUNCPTR(f) \
-    if ((p##f = (void *)GetProcAddress(hmod, #f)) == NULL) \
-    { \
-        printf("%s not found in %s\n", #f, "kernel32.dll"); \
-        return FALSE; \
-    }
-    LOAD_FUNCPTR(GetLastError);
-
-#undef LOAD_FUNCPTR
     return TRUE;
 }
 
@@ -295,8 +238,7 @@ static void print_cert_info(PCCERT_CONTEXT ctx)
     }
 }
 
-C_ASSERT(sizeof(wchar_t) == 4);
-static void wchar4_to_wchar2(const wchar_t *in, WCHAR *out)
+static void wchar4_to_wchar2(const int *in, WCHAR *out)
 {
     while (*in) *out++ = *in++;
     *out = 0;
@@ -306,8 +248,8 @@ static void provinfo_to_win32(CRYPT_KEY_PROV_INFO *info, size_t size)
 {
     CRYPT_KEY_PROV_INFO *tmp = xmemdup(info, size);
 
-    wchar4_to_wchar2((const wchar_t *)tmp->pwszContainerName, info->pwszContainerName);
-    wchar4_to_wchar2((const wchar_t *)tmp->pwszProvName, info->pwszProvName);
+    wchar4_to_wchar2((const int *)tmp->pwszContainerName, info->pwszContainerName);
+    wchar4_to_wchar2((const int *)tmp->pwszProvName, info->pwszProvName);
 
     free(tmp);
 }
@@ -384,7 +326,6 @@ static BOOL read_store_info(const char *store_name, struct store_info *store)
     while ((ctx = pCertEnumCertificatesInStore(hstore, ctx)))
     {
         print_cert_info(ctx);
-        printf("\n");
 
         if (!store->cert_count)
             store->cert = xmalloc(sizeof(store->cert[0]));
@@ -399,6 +340,7 @@ static BOOL read_store_info(const char *store_name, struct store_info *store)
             return FALSE;
 
         store->cert_count++;
+        printf("\n");
     }
 
     pCertCloseStore(hstore, 0);
@@ -422,14 +364,14 @@ static BOOL save_prop_info(PCCERT_CONTEXT ctx, struct cert_info *cert)
                       debugstr_w(pinfo->pwszContainerName), debugstr_w(pinfo->pwszProvName), pinfo->dwProvType,
                       pinfo->dwFlags, pinfo->cProvParam, pinfo->rgProvParam, pinfo->dwKeySpec);
 
-            if (!pCertSetCertificateContextProperty(ctx, cert->prop[i].id, 0, cert->prop[i].data.pbData))
-                printf("CertSetCertificateContextProperty(%u) error %#x\n", cert->prop[i].id, pGetLastError());
+            if (!CertSetCertificateContextProperty(ctx, cert->prop[i].id, 0, cert->prop[i].data.pbData))
+                printf("CertSetCertificateContextProperty(%u) error %#x\n", cert->prop[i].id, GetLastError());
             break;
         }
 
         default:
-            if (!pCertSetCertificateContextProperty(ctx, cert->prop[i].id, 0, &cert->prop[i].data))
-                printf("CertSetCertificateContextProperty(%u) error %#x\n", cert->prop[i].id, pGetLastError());
+            if (!CertSetCertificateContextProperty(ctx, cert->prop[i].id, 0, &cert->prop[i].data))
+                printf("CertSetCertificateContextProperty(%u) error %#x\n", cert->prop[i].id, GetLastError());
             break;
         }
     }
@@ -445,29 +387,29 @@ static BOOL save_store_info(const char *store_name, struct store_info *store)
 
     printf("Saving certificates to %s store\n", store_name);
 
-    hstore = pCertOpenStore(CERT_STORE_PROV_SYSTEM_A, 0, 0,
-                          CERT_SYSTEM_STORE_CURRENT_USER, store_name);
+    hstore = CertOpenStore(CERT_STORE_PROV_SYSTEM_A, 0, 0,
+                           CERT_SYSTEM_STORE_CURRENT_USER, store_name);
     if (!hstore)
     {
-        printf("CertOpenStore(%s) error %#x\n", store_name, pGetLastError());
+        printf("CertOpenStore(%s) error %#x\n", store_name, GetLastError());
         return FALSE;
     }
 
     for (i = 0; i < store->cert_count; i++)
     {
-        if (!pCertAddEncodedCertificateToStore(hstore, store->cert[i].dwCertEncodingType,
+        if (!CertAddEncodedCertificateToStore(hstore, store->cert[i].dwCertEncodingType,
                                                store->cert[i].data.pbData, store->cert[i].data.cbData,
                                                CERT_STORE_ADD_REPLACE_EXISTING, &new_ctx))
         {
-            printf("CertAddEncodedCertificateToStore error %#x\n", pGetLastError());
+            printf("CertAddEncodedCertificateToStore error %#x\n", GetLastError());
             break;
         }
 
         save_prop_info(new_ctx, &store->cert[i]);
     }
 
-    pCertControlStore(hstore, 0, CERT_STORE_CTRL_COMMIT, NULL);
-    pCertCloseStore(hstore, 0);
+    CertControlStore(hstore, 0, CERT_STORE_CTRL_COMMIT, NULL);
+    CertCloseStore(hstore, 0);
 
     return TRUE;
 }
@@ -541,7 +483,7 @@ static BOOL /*WINAPI*/ enum_oid_info(PCCRYPT_OID_INFO info, void *arg)
         return FALSE;
     }
 
-    wchar4_to_wchar2((wchar_t *)info->pwszName, name);
+    wchar4_to_wchar2((const int *)info->pwszName, name);
     RegSetValueExW(hkey, nameW, 0, REG_SZ, (BYTE *)name, (lstrlenW(name) + 1) * sizeof(WCHAR));
 
     if (info->u.Algid)
@@ -670,8 +612,6 @@ int main(int argc, char *argv[])
 
     read_store_info("Root", &root_store);
     read_store_info("My", &my_store);
-
-    if (!load_win32()) return -1;
 
     printf("======================= Wine store =======================\n");
 

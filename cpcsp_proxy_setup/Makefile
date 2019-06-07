@@ -1,13 +1,15 @@
-CC=winegcc
-#CFLAGS=-I../../wine/include -D__WINESRC__ -Wall
-CFLAGS=-Wall -D__WINESRC__
-OBJ=cpcsp_proxy_setup.o
+#CC	= winegcc -m64
+CC	= winegcc -m32
+CFLAGS	= -O2 -Wall -D__WINESRC__
+OBJ	= cpcsp_proxy_setup.o
+DEPS	= Makefile
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 cpcsp_proxy_setup.exe: $(OBJ)
-	$(CC) -o $@ $^ -mconsole $(CFLAGS)
+	$(CC) -o $@ $^ -mconsole $(CFLAGS) -lkernel32 -ladvapi32 -lcrypt32
+	strip $@.so
 
 clean:
-	rm -f *.o *.exe
+	rm -f *.o *.exe *.exe.so
