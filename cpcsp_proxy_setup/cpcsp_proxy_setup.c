@@ -191,6 +191,22 @@ static const char *propid_to_name(DWORD propid)
     return "unknown";
 }
 
+static const char *unix_cp(const char *buf)
+{
+    UINT in_cp;
+    WCHAR in[512];
+    static char out[512];
+
+    in_cp = GetACP();
+    if (in_cp == 1252) in_cp = 1251;
+
+    MultiByteToWideChar(in_cp, 0, buf, -1, in, ARRAY_SIZE(in));
+    WideCharToMultiByte(CP_UTF8, 0, in, -1, out, sizeof(out), NULL, NULL);
+    out[sizeof(out) - 1] = 0;
+
+    return out;
+}
+
 static void print_cert_info(PCCERT_CONTEXT ctx)
 {
     char buf[512];
@@ -206,7 +222,7 @@ static void print_cert_info(PCCERT_CONTEXT ctx)
         printf("CertGetNameString error %#x\n", pGetLastError());
         return;
     }
-    printf("Subject: %s\n", buf);
+    printf("Subject: %s\n", unix_cp(buf));
 
     if (!pCertGetNameStringA(ctx, CERT_NAME_SIMPLE_DISPLAY_TYPE,
                             CERT_NAME_ISSUER_FLAG, NULL, buf, sizeof(buf)))
@@ -214,7 +230,7 @@ static void print_cert_info(PCCERT_CONTEXT ctx)
         printf("CertGetNameString error %#x\n", pGetLastError());
         return;
     }
-    printf("Issuer: %s\n", buf);
+    printf("Issuer: %s\n", unix_cp(buf));
 
     FileTimeToSystemTime(&ctx->pCertInfo->NotBefore, &st);
     printf("Not valid before: %d.%02d.%04d %02d:%02d:%02d\n",
