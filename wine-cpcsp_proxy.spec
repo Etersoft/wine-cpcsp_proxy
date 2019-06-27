@@ -1,5 +1,5 @@
 Name: wine-cpcsp_proxy
-Version: 0.1
+Version: 0.2
 Release: alt1
 
 Summary: Proxy for using native CryptoPro in Windows applications with wine
@@ -40,5 +40,11 @@ cp /usr/bin/winepath %buildroot/usr/bin/cpcsp_proxy_setup
 /usr/bin/cpcsp_proxy_setup
 
 %changelog
+* Thu Jun 27 2019 Vitaly Lipatov <lav@altlinux.ru> 0.2-alt1
+- cpcsp_proxy_setup: Various fixes
+- cpcsp_proxy: Fix calling convention for CryptoPro provided APIs
+- cpcsp_proxy: Pass cpcsp_proxy.spec to winegcc in order to build correct PE exports
+- cpcsp_proxy_setup: Add support for certificates with strings in cp1251
+
 * Mon May 20 2019 Konstantin Kondratyuk <kondratyuk@altlinux.ru> 0.1-alt1
 - initial build for ALT Sisyphus
