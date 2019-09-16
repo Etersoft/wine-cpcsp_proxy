@@ -432,12 +432,18 @@ static BOOL save_store_info(const char *store_name, struct store_info *store)
 
 static void setup_providers(void)
 {
-    HKEY hkey_main, hkey;
+    HKEY hkey_provider, hkey_provider_types, hkey;
     DWORD i = 0, type, size;
 
-    if (RegCreateKeyA(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Cryptography\\Defaults\\Provider", &hkey_main))
+    if (RegCreateKeyA(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Cryptography\\Defaults\\Provider", &hkey_provider))
     {
-        printf("failed to open providers key\n");
+        printf("failed to open provider key\n");
+        return;
+    }
+
+    if (RegCreateKeyA(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Cryptography\\Defaults\\Provider Types", &hkey_provider_types))
+    {
+        printf("failed to open provider types key\n");
         return;
     }
 
@@ -447,9 +453,11 @@ static void setup_providers(void)
 
         if (pCryptEnumProvidersA(i, NULL, 0, &type, name, &size))
         {
+            char buf[32];
+
             printf("Adding: provider %s, type %u\n", name, type);
 
-            if (RegCreateKeyA(hkey_main, name, &hkey))
+            if (RegCreateKeyA(hkey_provider, name, &hkey))
             {
                 printf("failed to create key %s\n", name);
                 return;
@@ -468,13 +476,30 @@ static void setup_providers(void)
             }
 
             RegCloseKey(hkey);
+
+            sprintf(buf, "Type %03u", type);
+
+            if (RegCreateKeyA(hkey_provider_types, buf, &hkey))
+            {
+                printf("failed to create key %s\n", buf);
+                return;
+            }
+
+            if (RegSetValueExA(hkey, "Name", 0, REG_SZ, (BYTE *)name, strlen(name) + 1))
+            {
+                printf("failed to set Name value\n");
+                return;
+            }
+
+            RegCloseKey(hkey);
         }
 
         free(name);
         i++;
     }
 
-    RegCloseKey(hkey_main);
+    RegCloseKey(hkey_provider);
+    RegCloseKey(hkey_provider_types);
 }
 
 /* Crypto Pro implementation is broken, it doesn't use WINAPI for a callback */
