@@ -1,5 +1,5 @@
 #CC	= winegcc -m64
-CC	= winegcc -m32
+CC	= winegcc
 CFLAGS	= -O2 -Wall -D__WINESRC__
 DEPS	= Makefile api_hook.h
 OBJ	= api_hook.o proxy.o cpcsp_proxy.spec

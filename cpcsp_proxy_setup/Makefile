@@ -1,5 +1,5 @@
 #CC	= winegcc -m64
-CC	= winegcc -m32
+CC	= winegcc
 CFLAGS	= -O2 -Wall -D__WINESRC__
 OBJ	= cpcsp_proxy_setup.o
 DEPS	= Makefile
