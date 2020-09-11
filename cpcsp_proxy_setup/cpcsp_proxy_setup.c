@@ -56,13 +56,13 @@ static BOOL load_cpcsp(void)
 {
     void *libcapi;
 
-    if (!(libcapi = wine_dlopen(SONAME_LIBCAPI20, RTLD_NOW, NULL, 0)))
+    if (!(libcapi = dlopen(SONAME_LIBCAPI20, RTLD_NOW)))
     {
-        printf("failed to load %s\n", SONAME_LIBCAPI20);
+        printf("failed to load %s (%s)\n", SONAME_LIBCAPI20, dlerror());
         return FALSE;
     }
 #define LOAD_FUNCPTR(f) \
-    if ((p##f = wine_dlsym(libcapi, #f, NULL, 0)) == NULL) \
+    if ((p##f = dlsym(libcapi, #f)) == NULL) \
     { \
         printf("%s not found in %s\n", #f, SONAME_LIBCAPI20); \
         return FALSE; \

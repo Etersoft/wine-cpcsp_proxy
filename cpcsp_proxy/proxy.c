@@ -77,15 +77,13 @@ static HCRYPTPROV hprov_def;
 
 static BOOL load_cpcsp(void)
 {
-    char err[256];
-
-    if (!(libssp_handle = wine_dlopen(SONAME_LIBSSP, RTLD_NOW, err, sizeof(err))))
+    if (!(libssp_handle = dlopen(SONAME_LIBSSP, RTLD_NOW)))
     {
-        FIXME("failed to load %s (%s)\n", SONAME_LIBSSP, err);
+        FIXME("failed to load %s (%s)\n", SONAME_LIBSSP, dlerror());
         return FALSE;
     }
 #define LOAD_FUNCPTR(f) \
-    if ((p##f = wine_dlsym(libssp_handle, #f, NULL, 0)) == NULL) \
+    if ((p##f = dlsym(libssp_handle, #f)) == NULL) \
     { \
         FIXME("%s not found in %s\n", #f, SONAME_LIBSSP); \
         libssp_handle = NULL; \
@@ -128,7 +126,7 @@ static BOOL load_cpcsp(void)
 
 static void unload_cpcsp(void)
 {
-    wine_dlclose(libssp_handle, NULL, 0);
+    dlclose(libssp_handle);
     libssp_handle = NULL;
 }
 
