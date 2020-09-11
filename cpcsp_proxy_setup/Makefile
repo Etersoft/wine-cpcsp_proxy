@@ -10,7 +10,7 @@ DEPS	= Makefile
 
 cpcsp_proxy_setup.exe: $(OBJ)
 	$(WINEGCC) -o $@ $^ -mconsole $(CFLAGS) $(LIBS)
-	strip $@.so
+	#strip $@.so
 
 clean:
 	rm -f *.o *.exe *.exe.so

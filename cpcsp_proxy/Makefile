@@ -10,7 +10,7 @@ OBJ	= api_hook.o proxy.o cpcsp_proxy.spec
 
 cpcsp_proxy.dll.so: $(OBJ)
 	$(WINEGCC) -o $@ $^ -shared $(CFLAGS) $(LIBS)
-	strip $@
+	#strip $@
 
 clean:
 	rm -f *.o *.dll.so
