@@ -23,6 +23,13 @@ ExclusiveArch: %ix86 x86_64
 %add_verify_elf_skiplist %winelibdir/cpcsp_proxy.dll.so
 %add_verify_elf_skiplist %winelibdir/cpcsp_proxy_setup.exe.so
 
+# we work only with libcapi20 from CryptoPro
+%ifarch x86_64
+Requires: lsb-cprocsp-capilite-64
+%else
+Requires: lsb-cprocsp-capilite
+%endif
+
 %description
 Proxy for using native CryptoPro in Windows applications with wine.
 
