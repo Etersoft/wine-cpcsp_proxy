@@ -1,14 +1,15 @@
-#CC	= winegcc -m64
-CC	= winegcc
-CFLAGS	= -O2 -Wall -D__WINESRC__
+WINEARCH = 
+WINEGCC	= winegcc $(WINEARCH)
+CFLAGS	= -g -fPIC -O2 -Wall -D__WINESRC__
+LIBS	= -lkernel32 -ladvapi32 -lcrypt32 -ldl
 OBJ	= cpcsp_proxy_setup.o
 DEPS	= Makefile
 
 %.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(WINEGCC) -c -o $@ $< $(CFLAGS)
 
 cpcsp_proxy_setup.exe: $(OBJ)
-	$(CC) -o $@ $^ -mconsole $(CFLAGS) -lkernel32 -ladvapi32 -lcrypt32
+	$(WINEGCC) -o $@ $^ -mconsole $(CFLAGS) $(LIBS)
 	strip $@.so
 
 clean:
