@@ -634,7 +634,7 @@ static void setup_oid_info(void)
     RegCloseKey(hkey_main);
 }
 
-int main(int argc, char *argv[])
+int __cdecl main(int argc, char *argv[])
 {
     struct store_info root_store, my_store;
 
