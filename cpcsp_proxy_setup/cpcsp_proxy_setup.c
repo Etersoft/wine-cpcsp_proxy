@@ -82,7 +82,6 @@ static BOOL load_cpcsp(void)
     LOAD_FUNCPTR(CertOpenStore);
     LOAD_FUNCPTR(CertCloseStore);
     LOAD_FUNCPTR(CertControlStore);
-    LOAD_FUNCPTR(CryptEnumProvidersA);
     LOAD_FUNCPTR(CryptEnumOIDInfo);
     LOAD_FUNCPTR(GetLastError);
 #undef LOAD_FUNCPTR
@@ -93,6 +92,7 @@ static BOOL load_cpcsp(void)
         printf("%s not found in %s\n", #f, SONAME_LIBCAPI20); \
         return FALSE; \
     }
+    LOAD_FUNCPTR(CryptEnumProvidersA);
 #undef LOAD_FUNCPTR
 
     return TRUE;
