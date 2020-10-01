@@ -30,8 +30,10 @@
 #include <wine/debug.h>
 
 #ifdef _WIN64
+#define SONAME_LIBCAPI10 "/opt/cprocsp/lib/amd64/libcapi10.so"
 #define SONAME_LIBCAPI20 "/opt/cprocsp/lib/amd64/libcapi20.so"
 #else
+#define SONAME_LIBCAPI10 "/opt/cprocsp/lib/ia32/libcapi10.so"
 #define SONAME_LIBCAPI20 "/opt/cprocsp/lib/ia32/libcapi20.so"
 #endif
 
@@ -53,15 +55,22 @@ static BOOL verbose = FALSE;
 
 static BOOL load_cpcsp(void)
 {
-    void *libcapi;
+    void *libcapi10, *libcapi20;
 
-    if (!(libcapi = dlopen(SONAME_LIBCAPI20, RTLD_NOW)))
+    if (!(libcapi10 = dlopen(SONAME_LIBCAPI10, RTLD_NOW)))
+    {
+        printf("failed to load %s (%s)\n", SONAME_LIBCAPI10, dlerror());
+        return FALSE;
+    }
+
+    if (!(libcapi20 = dlopen(SONAME_LIBCAPI20, RTLD_NOW)))
     {
         printf("failed to load %s (%s)\n", SONAME_LIBCAPI20, dlerror());
         return FALSE;
     }
+
 #define LOAD_FUNCPTR(f) \
-    if ((p##f = dlsym(libcapi, #f)) == NULL) \
+    if ((p##f = dlsym(libcapi20, #f)) == NULL) \
     { \
         printf("%s not found in %s\n", #f, SONAME_LIBCAPI20); \
         return FALSE; \
@@ -76,6 +85,14 @@ static BOOL load_cpcsp(void)
     LOAD_FUNCPTR(CryptEnumProvidersA);
     LOAD_FUNCPTR(CryptEnumOIDInfo);
     LOAD_FUNCPTR(GetLastError);
+#undef LOAD_FUNCPTR
+
+#define LOAD_FUNCPTR(f) \
+    if ((p##f = dlsym(libcapi10, #f)) == NULL) \
+    { \
+        printf("%s not found in %s\n", #f, SONAME_LIBCAPI20); \
+        return FALSE; \
+    }
 #undef LOAD_FUNCPTR
 
     return TRUE;
