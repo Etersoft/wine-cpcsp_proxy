@@ -27,7 +27,6 @@
 #include <windows.h>
 #include <wincrypt.h>
 
-#include <wine/library.h>
 #include <wine/debug.h>
 
 #ifdef _WIN64

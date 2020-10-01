@@ -26,7 +26,6 @@
 #include "winreg.h"
 #include "wincrypt.h"
 #include "winnls.h"
-#include "wine/library.h"
 #include "wine/debug.h"
 
 #include "api_hook.h"
