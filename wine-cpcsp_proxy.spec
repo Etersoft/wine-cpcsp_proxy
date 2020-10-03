@@ -2,10 +2,11 @@ Name: wine-cpcsp_proxy
 Version: 0.5
 Release: alt1
 
-Summary: Proxy for using native CryptoPro in Windows applications with wine
+Summary: Proxy for using Linux CryptoPro in Windows applications with wine
 
 License: LGPLv2
 Group: Emulators
+URL: https://github.com/Etersoft/wine-cpcsp_proxy
 
 Source: %name-%version.tar
 
@@ -25,17 +26,19 @@ BuildRequires: gcc-c++
 %add_verify_elf_skiplist %winelibdir/cpcsp_proxy.dll.so
 %add_verify_elf_skiplist %winelibdir/cpcsp_proxy_setup.exe.so
 
-# we work only with libcapi20 from CryptoPro
-# but can't set requires on missed in repo packages
-#%ifarch x86_64
-#Requires: lsb-cprocsp-capilite-64
-#%else
-#Requires: lsb-cprocsp-capilite
-#%endif
+%ifarch x86_64
+%define capilitepkg lsb-cprocsp-capilite-64
+%else
+%define capilitepkg lsb-cprocsp-capilite
+%endif
 
 %description
-Proxy for using native CryptoPro in Windows applications with wine.
+Proxy for using Linux CryptoPro in Windows applications with wine.
 
+* Use with CryptoPro:
+ install %capilitepkg package
+* Use with cprocsp_compat (CRYPTO@Etersoft):
+ install cprocsp_compat
 
 %prep
 %setup
