@@ -29,6 +29,8 @@
 
 #include <wine/debug.h>
 
+#include "print_id_name.h"
+
 #ifdef _WIN64
 #define SONAME_LIBCAPI10 "/opt/cprocsp/lib/amd64/libcapi10.so"
 #define SONAME_LIBCAPI20 "/opt/cprocsp/lib/amd64/libcapi20.so"
@@ -148,64 +150,6 @@ static void *xmemdup(const void *ptr, size_t size)
     return res;
 }
 
-static const char *propid_to_name(DWORD propid)
-{
-#define name(id) if (propid == id) return #id
-    name(CERT_KEY_PROV_HANDLE_PROP_ID);
-    name(CERT_KEY_PROV_INFO_PROP_ID);
-    name(CERT_SHA1_HASH_PROP_ID);
-    name(CERT_MD5_HASH_PROP_ID);
-    name(CERT_KEY_CONTEXT_PROP_ID);
-    name(CERT_KEY_SPEC_PROP_ID);
-    name(CERT_IE30_RESERVED_PROP_ID);
-    name(CERT_PUBKEY_HASH_RESERVED_PROP_ID);
-    name(CERT_ENHKEY_USAGE_PROP_ID);
-    name(CERT_NEXT_UPDATE_LOCATION_PROP_ID);
-    name(CERT_FRIENDLY_NAME_PROP_ID);
-    name(CERT_PVK_FILE_PROP_ID);
-    name(CERT_DESCRIPTION_PROP_ID);
-    name(CERT_ACCESS_STATE_PROP_ID);
-    name(CERT_SIGNATURE_HASH_PROP_ID);
-    name(CERT_SMART_CARD_DATA_PROP_ID);
-    name(CERT_EFS_PROP_ID);
-    name(CERT_FORTEZZA_DATA_PROP_ID);
-    name(CERT_ARCHIVED_PROP_ID);
-    name(CERT_KEY_IDENTIFIER_PROP_ID);
-    name(CERT_AUTO_ENROLL_PROP_ID);
-    name(CERT_PUBKEY_ALG_PARA_PROP_ID);
-    name(CERT_CROSS_CERT_DIST_POINTS_PROP_ID);
-    name(CERT_ISSUER_PUBLIC_KEY_MD5_HASH_PROP_ID);
-    name(CERT_SUBJECT_PUBLIC_KEY_MD5_HASH_PROP_ID);
-    name(CERT_ENROLLMENT_PROP_ID);
-    name(CERT_DATE_STAMP_PROP_ID);
-    name(CERT_ISSUER_SERIAL_NUMBER_MD5_HASH_PROP_ID);
-    name(CERT_SUBJECT_NAME_MD5_HASH_PROP_ID);
-    name(CERT_EXTENDED_ERROR_INFO_PROP_ID);
-    name(CERT_RENEWAL_PROP_ID);
-    name(CERT_ARCHIVED_KEY_HASH_PROP_ID);
-    name(CERT_AUTO_ENROLL_RETRY_PROP_ID);
-    name(CERT_AIA_URL_RETRIEVED_PROP_ID);
-    name(CERT_AUTHORITY_INFO_ACCESS_PROP_ID);
-    name(CERT_BACKED_UP_PROP_ID);
-    name(CERT_OCSP_RESPONSE_PROP_ID);
-    name(CERT_REQUEST_ORIGINATOR_PROP_ID);
-    name(CERT_SOURCE_LOCATION_PROP_ID);
-    name(CERT_SOURCE_URL_PROP_ID);
-    name(CERT_NEW_KEY_PROP_ID);
-    name(CERT_OCSP_CACHE_PREFIX_PROP_ID);
-    name(CERT_SMART_CARD_ROOT_INFO_PROP_ID);
-    name(CERT_NO_AUTO_EXPIRE_CHECK_PROP_ID);
-    name(CERT_NCRYPT_KEY_HANDLE_PROP_ID);
-    name(CERT_HCRYPTPROV_OR_NCRYPT_KEY_HANDLE_PROP_ID);
-    name(CERT_SUBJECT_INFO_ACCESS_PROP_ID);
-    name(CERT_CA_OCSP_AUTHORITY_INFO_ACCESS_PROP_ID);
-    name(CERT_CA_DISABLE_CRL_PROP_ID);
-    name(CERT_ROOT_PROGRAM_CERT_POLICIES_PROP_ID);
-    name(CERT_ROOT_PROGRAM_NAME_CONSTRAINTS_PROP_ID);
-#undef name
-
-    return "unknown";
-}
 
 static const char *unix_cp(const char *buf)
 {
