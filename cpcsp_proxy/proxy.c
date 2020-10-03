@@ -30,7 +30,7 @@
 
 #include "api_hook.h"
 
-WINE_DEFAULT_DEBUG_CHANNEL(crypt);
+WINE_DEFAULT_DEBUG_CHANNEL(cpcsp_proxy);
 
 #ifdef _WIN64
 #define SONAME_LIBSSP "/opt/cprocsp/lib/amd64/libssp.so"
