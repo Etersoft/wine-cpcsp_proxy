@@ -112,6 +112,7 @@ struct cert_info
     CRYPT_DATA_BLOB data;
     DWORD prop_count;
     struct prop_info *prop;
+    WCHAR *subject;
 };
 
 struct store_info
@@ -150,6 +151,10 @@ static void *xmemdup(const void *ptr, size_t size)
     return res;
 }
 
+static WCHAR *xstrdupW(const WCHAR *str)
+{
+    return xmemdup(str, (lstrlenW(str) + 1) * sizeof(WCHAR));
+}
 
 static const char *unix_cp(const char *buf)
 {
@@ -301,6 +306,8 @@ static BOOL read_store_info(const char *store_name, struct store_info *store)
     ctx = NULL;
     while ((ctx = pCertEnumCertificatesInStore(hstore, ctx)))
     {
+        WCHAR buf[512];
+
         print_cert_info(ctx);
 
         if (!store->cert_count)
@@ -314,6 +321,10 @@ static BOOL read_store_info(const char *store_name, struct store_info *store)
 
         if (!read_prop_info(ctx, &store->cert[store->cert_count]))
             return FALSE;
+
+        if (CertGetNameStringW(ctx, CERT_NAME_SIMPLE_DISPLAY_TYPE,
+                               0, NULL, buf, ARRAY_SIZE(buf)))
+            store->cert[store->cert_count].subject = xstrdupW(buf);
 
         store->cert_count++;
         printf("\n");
@@ -373,6 +384,8 @@ static BOOL save_store_info(const char *store_name, struct store_info *store)
 
     for (i = 0; i < store->cert_count; i++)
     {
+        printf("Saving certificate %s to %s store\n", wine_dbgstr_w(store->cert[i].subject), store_name);
+
         if (!CertAddEncodedCertificateToStore(hstore, store->cert[i].dwCertEncodingType,
                                                store->cert[i].data.pbData, store->cert[i].data.cbData,
                                                CERT_STORE_ADD_REPLACE_EXISTING, &new_ctx))
