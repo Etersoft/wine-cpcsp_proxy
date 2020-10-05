@@ -207,6 +207,8 @@ BOOL WINAPI CryptDllConvertPublicKeyInfo(DWORD type, CERT_PUBLIC_KEY_INFO *info,
 {
     BOOL ret;
 
+    TRACE("(%08x,%p,%04x,%08x,%p,%p)\n", type, info, algid, flags, data, size);
+
     if (!pRNetConvertPublicKeyInfo)
     {
         FIXME("stub\n");
@@ -244,6 +246,9 @@ BOOL WINAPI CryptDllEncodePublicKeyAndParameters(DWORD type, LPSTR oid, BYTE *pu
 {
     BOOL ret;
 
+    TRACE("(%08x,%s,%p,%08x,%08x,%p,%p,%p,%p,%p)\n", type, debugstr_a(oid), pubkey, pubkey_size, flags,
+          aux_info, key_data, key_size, key_params, key_params_size);
+
     if (!pRNetEncodePublicKeyAndParameters)
     {
         FIXME("stub\n");
@@ -259,7 +264,9 @@ BOOL WINAPI CryptDllEncodePublicKeyAndParameters(DWORD type, LPSTR oid, BYTE *pu
         return FALSE;
     }
 
-    if (key_data)
+    TRACE("got key %p,%u, params %p,%u\n", *key_data, *key_size, *key_params, *key_params_size);
+
+    if (key_data && *key_data)
     {
         BYTE *cp_data = *key_data;
 
@@ -274,7 +281,7 @@ BOOL WINAPI CryptDllEncodePublicKeyAndParameters(DWORD type, LPSTR oid, BYTE *pu
         free(cp_data);
     }
 
-    if (key_params)
+    if (key_params && *key_params)
     {
         BYTE *cp_params = *key_params;
 
