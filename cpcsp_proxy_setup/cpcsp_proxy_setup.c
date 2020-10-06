@@ -609,7 +609,7 @@ static void setup_oid_info(void)
 
 int __cdecl main(int argc, char *argv[])
 {
-    struct store_info root_store, my_store;
+    struct store_info root_store, my_store, ca_store;
 
     if (argc > 1)
     {
@@ -624,11 +624,13 @@ int __cdecl main(int argc, char *argv[])
 
     printf("======================= Linux store =======================\n");
 
+    read_store_info("CA", &ca_store);
     read_store_info("Root", &root_store);
     read_store_info("My", &my_store);
 
     printf("======================= Wine store =======================\n");
 
+    save_store_info("CA", &ca_store);
     save_store_info("Root", &root_store);
     save_store_info("My", &my_store);
 
