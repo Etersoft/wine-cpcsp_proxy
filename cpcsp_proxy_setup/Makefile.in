@@ -1,5 +1,6 @@
 MODULE  = cpcsp_proxy_setup.exe
-APPMODE = -mconsole
-IMPORTS = advapi32
+IMPORTS = advapi32 crypt32
+
+EXTRADLLFLAGS = -mconsole -mcygwin
 
 C_SRCS = cpcsp_proxy_setup.c

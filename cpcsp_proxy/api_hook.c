@@ -20,6 +20,9 @@
 
 #include "windef.h"
 #include "winbase.h"
+#include "wine/debug.h"
+
+WINE_DEFAULT_DEBUG_CHANNEL(cpcsp_proxy);
 
 #include <pshpack1.h>
 struct jmp
@@ -52,7 +55,11 @@ void *set_api_hook(LPCSTR libname, LPCSTR apiname, void *hook)
     if (!entry) return NULL;
 
     if (memcmp(entry, hotpatch, sizeof(hotpatch)) != 0)
+    {
+        BYTE *p = (BYTE *)entry;
+        WARN("got %02x,%02x,%02x,%02x\n", p[0], p[1], p[2], p[3]);
         return NULL;
+    }
 
     if (!heap)
         heap = HeapCreate(HEAP_CREATE_ENABLE_EXECUTE, 0, 0);

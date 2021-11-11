@@ -1,5 +1,7 @@
 MODULE = cpcsp_proxy.dll
 
+EXTRADLLFLAGS = -mcygwin
+
 C_SRCS = \
 	api_hook.c \
 	proxy.c

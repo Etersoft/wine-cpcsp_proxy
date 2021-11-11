@@ -138,10 +138,10 @@ static void set_default_hprov(void)
 {
     DWORD size;
 
-    if (pCryptGetDefaultProviderA(75, NULL, CRYPT_USER_DEFAULT, NULL, &size))
+    if (pCryptGetDefaultProviderA(80, NULL, CRYPT_USER_DEFAULT, NULL, &size))
     {
         LPSTR def_prov_name = HeapAlloc(GetProcessHeap(), 0, size);
-        if (def_prov_name && pCryptGetDefaultProviderA(75, NULL, CRYPT_USER_DEFAULT, def_prov_name, &size))
+        if (def_prov_name && pCryptGetDefaultProviderA(80, NULL, CRYPT_USER_DEFAULT, def_prov_name, &size))
         {
             HMODULE hmod = GetModuleHandleA("advapi32.dll");
             if (hmod)
@@ -152,7 +152,7 @@ static void set_default_hprov(void)
                 if (pCryptAcquireContext)
                 {
                     TRACE("CryptGetDefaultProviderA => %s\n", debugstr_a(def_prov_name));
-                    if (!pCryptAcquireContext(&hprov_def, NULL, def_prov_name, 75, CRYPT_VERIFYCONTEXT))
+                    if (!pCryptAcquireContext(&hprov_def, NULL, def_prov_name, 80, CRYPT_VERIFYCONTEXT))
                         WARN("error %#x\n", GetLastError());
                     else
                         TRACE("hprov_def => %#lx\n", hprov_def);
