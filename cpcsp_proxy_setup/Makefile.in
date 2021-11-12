@@ -1,5 +1,5 @@
-MODULE  = cpcsp_proxy_setup.exe
-IMPORTS = advapi32 crypt32
+MODULE	= cpcsp_proxy_setup.exe
+IMPORTS	= advapi32 crypt32 kernel32 ntdll
 
 EXTRADLLFLAGS = -mconsole -mcygwin
 
