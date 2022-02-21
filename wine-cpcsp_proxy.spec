@@ -1,5 +1,5 @@
 Name: wine-cpcsp_proxy
-Version: 0.5.2
+Version: 0.6.0
 Release: alt1
 
 Summary: Proxy for using Linux CryptoPro in Windows applications with wine
@@ -19,12 +19,25 @@ BuildRequires: wine
 # FIXME: winegcc: Could not find g++
 BuildRequires: gcc-c++
 
+# TODO: move to rpm-macros-wine
+# set arch dependent dirs
+%ifarch %{ix86}
+%define winepedir i386-windows
+%define winesodir i386-unix
+%endif
+%ifarch x86_64
+%define winepedir x86_64-windows
+%define winesodir x86_64-unix
+%endif
+
 #Conflicts: wine-p11csp
 
 %define winelibdir %_libdir/wine
 
-%add_verify_elf_skiplist %winelibdir/cpcsp_proxy.dll.so
-%add_verify_elf_skiplist %winelibdir/cpcsp_proxy_setup.exe.so
+%define targetdir %winelibdir/%winesodir
+
+%add_verify_elf_skiplist %targetdir/cpcsp_proxy.dll.so
+%add_verify_elf_skiplist %targetdir/cpcsp_proxy_setup.exe.so
 
 %ifarch x86_64
 %define capilitepkg lsb-cprocsp-capilite-64
@@ -48,18 +61,24 @@ Proxy for using Linux CryptoPro in Windows applications with wine.
 %make_build -C cpcsp_proxy_setup
 
 %install
-mkdir -p %buildroot%winelibdir/
-cp cpcsp_proxy/cpcsp_proxy.dll.so %buildroot%winelibdir
-cp cpcsp_proxy_setup/cpcsp_proxy_setup.exe.so %buildroot%winelibdir
+mkdir -p %buildroot%targetdir/
+cp cpcsp_proxy/cpcsp_proxy.dll.so %buildroot%targetdir
+cp cpcsp_proxy_setup/cpcsp_proxy_setup.exe.so %buildroot%targetdir
 mkdir -p %buildroot/%_bindir/
 cp %_bindir/wineapploader %buildroot/%_bindir/cpcsp_proxy_setup
 
 %files
-%winelibdir/cpcsp_proxy_setup.exe.so
-%winelibdir/cpcsp_proxy.dll.so
+%targetdir/cpcsp_proxy_setup.exe.so
+%targetdir/cpcsp_proxy.dll.so
 %_bindir/cpcsp_proxy_setup
 
 %changelog
+* Tue Feb 22 2022 Vitaly Lipatov <lav@altlinux.ru> 0.6.0-alt1
+- update for wine-6.21
+- further adaptation for wine-6.21 build system
+- add .dll.so -> .dll link
+- update build for wine-7.2
+
 * Tue Oct 06 2020 Vitaly Lipatov <lav@altlinux.ru> 0.5.2-alt1
 - add traces to public info converters, verify parameters from the backend
 - print information about being saved certificate (eterbug #14660)
