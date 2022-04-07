@@ -10,10 +10,10 @@
 
 Пакеты подготовлены для ALT p9. По поводу других систем создавайте Issue.
 
-Для 32-битного wine:
+Для 32-битных программ в wine:
  $ epmi ecryptmgr i586-wine-cpcsp_proxy
 
-Для 64-битного wine:
+Для 64-битных программ в wine:
  $ epmi ecryptmgr wine-cpcsp_proxy
 
 Устанавливаем CryptoPro:
@@ -26,7 +26,8 @@
 Настраиваем cpcsp_proxy:
  $ cpcsp_proxy_setup
 
-После этого в wine должны работать программы, использующие ГОСТ-криптографию, включая CadesPlugin (он же КриптоПро ЭЦП Browser plug-in)
+После этого в wine должны работать программы, использующие ГОСТ-криптографию, включая CadesPlugin (он же КриптоПро ЭЦП Browser plug-in).
+Конечно, CadesPlugin устанавливается в wine отдельно.
 
 ## Сборка
 
