@@ -1,6 +1,6 @@
 Name: wine-cpcsp_proxy
 Version: 0.6.0
-Release: alt1
+Release: alt2
 
 Summary: Proxy for using Linux CryptoPro in Windows applications with wine
 
@@ -12,7 +12,7 @@ Source: %name-%version.tar
 
 ExclusiveArch: %ix86 x86_64
 
-BuildRequires: libwine-devel >= 5.16
+BuildRequires: libwine-devel >= 6.23
 # for wineapploader
 BuildRequires: wine
 
@@ -73,6 +73,10 @@ cp %_bindir/wineapploader %buildroot/%_bindir/cpcsp_proxy_setup
 %_bindir/cpcsp_proxy_setup
 
 %changelog
+* Thu Apr 07 2022 Vitaly Lipatov <lav@altlinux.ru> 0.6.0-alt2
+- update README.md
+- fix Makefile to build package
+
 * Tue Feb 22 2022 Vitaly Lipatov <lav@altlinux.ru> 0.6.0-alt1
 - update for wine-6.21
 - further adaptation for wine-6.21 build system
