@@ -9,9 +9,15 @@ DEPS	= Makefile
 %.o: %.c $(DEPS)
 	$(WINEGCC) -c -o $@ $< $(CFLAGS)
 
-cpcsp_proxy_setup.exe: $(OBJ)
+all: cpcsp_proxy_setup.exe.so cpcsp_proxy_setup.exe
+	
+
+cpcsp_proxy_setup.exe.so: $(OBJ)
 	$(WINEGCC) -o $@ $^ -mconsole -municode -mcygwin $(CFLAGS) $(LIBS)
 	#strip $@.so
+
+cpcsp_proxy_setup.exe:
+	$(WINEGCC) -o $@ -Wb,--fake-module -mconsole -municode -mno-cygwin $(CFLAGS)
 
 clean:
 	rm -f *.o *.exe *.exe.so
