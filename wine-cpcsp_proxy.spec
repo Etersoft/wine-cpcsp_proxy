@@ -1,20 +1,33 @@
-Name: wine-cpcsp_proxy
-Version: 0.6.0
-Release: alt3
+# TODO:
+%define optflags_lto %nil
 
-Summary: Proxy for using Linux CryptoPro in Windows applications with wine
+Name: wine-etersoft-cpcsp_proxy
+Version: 0.6.0
+Release: alt5
+
+Summary: Proxy for using Linux CryptoPro in Windows applications with Wine
 
 License: LGPLv2
 Group: Emulators
 URL: https://github.com/Etersoft/wine-cpcsp_proxy
 
+# Source-git: https://github.com/Etersoft/wine-cpcsp_proxy.git
 Source: %name-%version.tar
+
+BuildRequires: libwine-devel >= 6.23
 
 ExclusiveArch: %ix86 x86_64
 
-BuildRequires: libwine-devel >= 6.23
-# for wineapploader
-#BuildRequires: wine-common
+%ifarch x86_64 aarch64
+  %def_with build64
+  %define winepkgname wine-etersoft-cpcsp_proxy
+%else
+  %def_without build64
+  %define winepkgname wine32-etersoft-cpcsp_proxy
+%endif
+
+
+%define libwinedir %_libdir/wine-etersoft
 
 # TODO: move to rpm-macros-wine
 # set arch dependent dirs
@@ -26,13 +39,17 @@ BuildRequires: libwine-devel >= 6.23
 %define winepedir x86_64-windows
 %define winesodir x86_64-unix
 %endif
+%ifarch %{arm}
+%define winepedir arm-windows
+%define winesodir arm-unix
+%endif
+%ifarch aarch64
+%define winepedir aarch64-windows
+%define winesodir aarch64-unix
+%endif
 
-#Conflicts: wine-p11csp
-
-%define winelibdir %_libdir/wine
-
-%add_verify_elf_skiplist %winelibdir/%winesodir/cpcsp_proxy.dll.so
-%add_verify_elf_skiplist %winelibdir/%winesodir/cpcsp_proxy_setup.exe.so
+%add_verify_elf_skiplist %libwinedir/%winesodir/cpcsp_proxy.dll.so
+%add_verify_elf_skiplist %libwinedir/%winesodir/cpcsp_proxy_setup.exe.so
 
 %ifarch x86_64
 %define capilitepkg lsb-cprocsp-capilite-64
@@ -40,13 +57,32 @@ BuildRequires: libwine-devel >= 6.23
 %define capilitepkg lsb-cprocsp-capilite
 %endif
 
+#Conflicts: wine-p11csp
+
 %description
 Proxy for using Linux CryptoPro in Windows applications with wine.
 
-* Use with CryptoPro:
+* Using with CryptoPro:
  install %capilitepkg package
-* Use with cprocsp_compat (CRYPTO@Etersoft):
+* Using with cprocsp_compat (CRYPTO@Etersoft):
  install cprocsp_compat
+
+
+%if "%winepkgname" != "%name"
+%package -n %winepkgname
+Group: Emulators
+Summary: Proxy for using Linux CryptoPro in Windows applications with Wine
+
+%description -n %winepkgname
+Proxy for using Linux CryptoPro in Windows applications with wine.
+
+* Using with CryptoPro:
+ install %capilitepkg package
+* Using with cprocsp_compat (CRYPTO@Etersoft):
+ install cprocsp_compat
+
+%endif
+
 
 %prep
 %setup
@@ -56,24 +92,32 @@ Proxy for using Linux CryptoPro in Windows applications with wine.
 %make_build -C cpcsp_proxy_setup
 
 %install
-mkdir -p %buildroot%winelibdir/{%winesodir,%winepedir}
+mkdir -p %buildroot%libwinedir/{%winesodir,%winepedir}
 
-cp cpcsp_proxy/cpcsp_proxy.dll.so %buildroot%winelibdir/%winesodir
-cp cpcsp_proxy/cpcsp_proxy.dll %buildroot%winelibdir/%winepedir
-cp cpcsp_proxy_setup/cpcsp_proxy_setup.exe.so %buildroot%winelibdir/%winesodir
-cp cpcsp_proxy_setup/cpcsp_proxy_setup.exe %buildroot%winelibdir/%winepedir
+cp cpcsp_proxy/cpcsp_proxy.dll.so %buildroot%libwinedir/%winesodir
+cp cpcsp_proxy/cpcsp_proxy.dll %buildroot%libwinedir/%winepedir
+cp cpcsp_proxy_setup/cpcsp_proxy_setup.exe.so %buildroot%libwinedir/%winesodir
+cp cpcsp_proxy_setup/cpcsp_proxy_setup.exe %buildroot%libwinedir/%winepedir
 
 mkdir -p %buildroot/%_bindir/
 cp %_bindir/wineapploader %buildroot/%_bindir/cpcsp_proxy_setup
 
-%files
-%winelibdir/%winesodir/cpcsp_proxy_setup.exe.so
-%winelibdir/%winesodir/cpcsp_proxy.dll.so
-%winelibdir/%winepedir/cpcsp_proxy_setup.exe
-%winelibdir/%winepedir/cpcsp_proxy.dll
+%files -n %winepkgname
+%libwinedir/%winesodir/cpcsp_proxy_setup.exe.so
+%libwinedir/%winesodir/cpcsp_proxy.dll.so
+%libwinedir/%winepedir/cpcsp_proxy_setup.exe
+%libwinedir/%winepedir/cpcsp_proxy.dll
 %_bindir/cpcsp_proxy_setup
 
 %changelog
+* Wed Jan 25 2023 Vitaly Lipatov <lav@altlinux.ru> 0.6.0-alt5
+- put dlls to _libdir/wine-etersoft
+- build 64 bit package as wine-etersoft-cpcsp_proxy
+- build 32 bit package as wine32-etersoft-cpcsp_proxy
+
+* Wed Jan 25 2023 Vitaly Lipatov <lav@altlinux.ru> 0.6.0-alt4
+- upgrade spec to multiname build
+
 * Sat Apr 09 2022 Vitaly Lipatov <lav@altlinux.ru> 0.6.0-alt3
 - build and install wine stubs
 
