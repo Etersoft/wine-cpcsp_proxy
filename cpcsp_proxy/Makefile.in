@@ -1,8 +1,9 @@
-MODULE	= cpcsp_proxy.dll
-IMPORTS	= kernel32 ntdll
+MODULE   = cpcsp_proxy.dll
+UNIXLIB  = cpcsp_proxy.so
+IMPORTS  = kernel32 crypt32 advapi32
 
-EXTRADLLFLAGS = -mcygwin
-
-C_SRCS = \
+SOURCES = \
 	api_hook.c \
-	proxy.c
+	convert.c \
+	proxy.c \
+	unixlib.c

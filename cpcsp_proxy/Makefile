@@ -1,24 +1,42 @@
-WINEARCH =
-WINEGCC = winegcc $(WINEARCH)
-CFLAGS	= -g -O2 -fPIC -Wall -D__WINESRC__ -shared
-IMPORTS	= kernel32 ntdll
-LIBS	= $(IMPORTS:%=-l%) -ldl
-DEPS	= Makefile api_hook.h
-OBJ	= api_hook.o proxy.o cpcsp_proxy.spec
+MODULE   = cpcsp_proxy.dll
+UNIXLIB  = cpcsp_proxy.so
+# -m32
+CROSSBUILD =
+LIBDIR = /usr/lib
+UNIXGCC  = winegcc $(CROSSBUILD) -DWINE_UNIX_LIB -fPIC
+ifeq ($(LIBDIR),/usr/lib)
+WINEARCH = i686-windows
+UNIXARCH = i386-unix
+else
+WINEARCH = x86_64-windows
+UNIXARCH = x86_64-unix
+endif
+WINELIBDIR = $(LIBDIR)/wine-etersoft
+WINEGCC  = winegcc -b $(WINEARCH) -D__WINE_PE_BUILD
+CFLAGS   = -g -O2 -Wall -D__WINESRC__
+IMPORTS  = ntdll kernel32 crypt32 advapi32
+LIBS     = $(IMPORTS:%=-l%)
+UNIXLIBS = -ldl $(WINELIBDIR)/$(UNIXARCH)/ntdll.so
+DEPS     = Makefile api_hook.h
+UNIXDEPS = Makefile api_hook.h unixlib.h
+OBJ      = convert.cross.o api_hook.cross.o proxy.cross.o cpcsp_proxy.spec
+UNIXOBJ  = unixlib.o
 
-%.o: %.c $(DEPS)
+all: cpcsp_proxy.so cpcsp_proxy.dll
+
+%.cross.o: %.c $(DEPS)
 	$(WINEGCC) -c -o $@ $< $(CFLAGS)
 
-all: cpcsp_proxy.dll.so cpcsp_proxy.dll
-	
+%.o: %.c $(UNIXDEPS)
+	$(UNIXGCC) -c -o $@ $< $(CFLAGS)
 
-cpcsp_proxy.dll.so: $(OBJ)
-	$(WINEGCC) -o $@ $^ -shared $(CFLAGS) $(LIBS)
-	#ln -s $@ cpcsp_proxy.dll
+cpcsp_proxy.so: $(UNIXOBJ)
+	$(UNIXGCC) -o $@ $^ -shared $(CFLAGS) $(UNIXLIBS)
 	#strip $@
 
-cpcsp_proxy.dll: cpcsp_proxy.spec
-	$(WINEGCC) -o $@ -Wb,--fake-module -shared $^ -mno-cygwin
+cpcsp_proxy.dll: $(OBJ)
+	$(WINEGCC) -o $@ $^ -shared -Wl,--wine-builtin $(CFLAGS) $(LIBS)
+	#strip $@
 
 clean:
-	rm -f *.o *.dll.so
+	rm -f *.o *.so *.dll *.lib
