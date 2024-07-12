@@ -2,7 +2,7 @@
 %define optflags_lto %nil
 
 Name: wine-etersoft-cpcsp_proxy
-Version: 0.6.1
+Version: 0.7.0
 Release: eter1
 
 Summary: Proxy for using Linux CryptoPro in Windows applications with Wine
@@ -29,6 +29,9 @@ ExclusiveArch: %ix86 x86_64
 
 %define libwinedir %_libdir/wine-etersoft
 
+# lib.req: ERROR: /tmp/.private/lav/wine-cpcsp_proxy-buildroot/usr/lib64/wine/x86_64-unix/cpcsp_proxy.so: library ntdll.so not found
+AutoReq: no
+
 # TODO: move to rpm-macros-wine
 # set arch dependent dirs
 %ifarch %{ix86}
@@ -48,6 +51,7 @@ ExclusiveArch: %ix86 x86_64
 %define winesodir aarch64-unix
 %endif
 
+%add_verify_elf_skiplist %libwinedir/%winesodir/cpcsp_proxy.so
 %add_verify_elf_skiplist %libwinedir/%winesodir/cpcsp_proxy.dll.so
 %add_verify_elf_skiplist %libwinedir/%winesodir/cpcsp_proxy_setup.exe.so
 
@@ -62,10 +66,10 @@ ExclusiveArch: %ix86 x86_64
 %description
 Proxy for using Linux CryptoPro in Windows applications with wine.
 
-* Using with CryptoPro:
- install %capilitepkg package
-* Using with cprocsp_compat (CRYPTO@Etersoft):
- install cprocsp_compat
+* Use with CryptoPro:
+ install %capilitepkg package before
+* Use with cprocsp_compat (CRYPTO@Etersoft):
+ install cprocsp_compat before
 
 
 %if "%winepkgname" != "%name"
@@ -88,13 +92,13 @@ Proxy for using Linux CryptoPro in Windows applications with wine.
 %setup
 
 %build
-%make_build -C cpcsp_proxy
+%make_build -C cpcsp_proxy LIBDIR=%_libdir
 %make_build -C cpcsp_proxy_setup
 
 %install
 mkdir -p %buildroot%libwinedir/{%winesodir,%winepedir}
 
-cp cpcsp_proxy/cpcsp_proxy.dll.so %buildroot%libwinedir/%winesodir
+cp cpcsp_proxy/cpcsp_proxy.so %buildroot%libwinedir/%winesodir
 cp cpcsp_proxy/cpcsp_proxy.dll %buildroot%libwinedir/%winepedir
 cp cpcsp_proxy_setup/cpcsp_proxy_setup.exe.so %buildroot%libwinedir/%winesodir
 cp cpcsp_proxy_setup/cpcsp_proxy_setup.exe %buildroot%libwinedir/%winepedir
@@ -104,13 +108,17 @@ cp %_bindir/wineapploader %buildroot/%_bindir/cpcsp_proxy_setup
 
 %files -n %winepkgname
 %libwinedir/%winesodir/cpcsp_proxy_setup.exe.so
-%libwinedir/%winesodir/cpcsp_proxy.dll.so
+%libwinedir/%winesodir/cpcsp_proxy.so
 %libwinedir/%winepedir/cpcsp_proxy_setup.exe
 %libwinedir/%winepedir/cpcsp_proxy.dll
 %_bindir/cpcsp_proxy_setup
 
 %changelog
-* Sat Jan 13 2024 Vitaly Lipatov <lav@altlinux.ru> 0.6.1-eter1
+* Fri Jul 12 2024 Vitaly Lipatov <lav@altlinux.ru> 0.7.0-eter1
+- update the code to the new unixcall mode
+
+* Sat Jan 13 2024 Vitaly Lipatov <lav@altlinux.ru> 0.6.1-alt1
+- README.md: fix typos
 - cpcsp_proxy/api_hook.h: remove DECLSPEC_HIDDEN
 
 * Wed Jan 25 2023 Vitaly Lipatov <lav@altlinux.ru> 0.6.0-alt5
