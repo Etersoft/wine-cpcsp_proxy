@@ -53,7 +53,6 @@ AutoReq: no
 
 %add_verify_elf_skiplist %libwinedir/%winesodir/cpcsp_proxy.so
 %add_verify_elf_skiplist %libwinedir/%winesodir/cpcsp_proxy.dll.so
-%add_verify_elf_skiplist %libwinedir/%winesodir/cpcsp_proxy_setup.exe.so
 
 %ifarch x86_64
 %define capilitepkg lsb-cprocsp-capilite-64
@@ -93,23 +92,18 @@ Proxy for using Linux CryptoPro in Windows applications with wine.
 
 %build
 %make_build -C cpcsp_proxy LIBDIR=%_libdir
-%make_build -C cpcsp_proxy_setup
 
 %install
 mkdir -p %buildroot%libwinedir/{%winesodir,%winepedir}
 
 cp cpcsp_proxy/cpcsp_proxy.so %buildroot%libwinedir/%winesodir
 cp cpcsp_proxy/cpcsp_proxy.dll %buildroot%libwinedir/%winepedir
-cp cpcsp_proxy_setup/cpcsp_proxy_setup.exe.so %buildroot%libwinedir/%winesodir
-cp cpcsp_proxy_setup/cpcsp_proxy_setup.exe %buildroot%libwinedir/%winepedir
 
 mkdir -p %buildroot/%_bindir/
-cp %_bindir/wineapploader %buildroot/%_bindir/cpcsp_proxy_setup
+install -D cpcsp_proxy_setup/cpcsp_proxy_setup buildroot/%_bindir/cpcsp_proxy_setup
 
 %files -n %winepkgname
-%libwinedir/%winesodir/cpcsp_proxy_setup.exe.so
 %libwinedir/%winesodir/cpcsp_proxy.so
-%libwinedir/%winepedir/cpcsp_proxy_setup.exe
 %libwinedir/%winepedir/cpcsp_proxy.dll
 %_bindir/cpcsp_proxy_setup
 

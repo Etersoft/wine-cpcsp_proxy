@@ -1,0 +1,28 @@
+#!/bin/sh
+
+fatal()
+{
+    echo "Error: $*" >&2
+    exit 1
+}
+
+register_cades(){
+    "$WINE" rundll32 cpcsp_proxy.dll,Install || fatal "32-bit cades has not been registered"
+    echo "32-bit cades.dll has been registered"
+    case $PREFIXARCH in
+        win64)
+            "$WINE"64 rundll32 cpcsp_proxy.dll,Install
+            echo "64-bit cades.dll has been registered" || fatal "64-bit cades has not been registered"
+            ;;
+    esac
+}
+
+# Использование стандартного пути к wine, если он не был задан
+[ -n "$WINE" ] || export WINE="/usr/bin/wine"
+
+# Использование стандартного пути к префиксу wine, если он не был задан
+[ -n "$WINEPREFIX" ] || export WINEPREFIX="$HOME/.wine"
+
+PREFIXARCH=$(grep '#arch' ~/.wine/system.reg | cut -d "=" -f2)
+
+register_cades
