@@ -100,7 +100,7 @@ cp cpcsp_proxy/cpcsp_proxy.so %buildroot%libwinedir/%winesodir
 cp cpcsp_proxy/cpcsp_proxy.dll %buildroot%libwinedir/%winepedir
 
 mkdir -p %buildroot/%_bindir/
-install -D cpcsp_proxy_setup/cpcsp_proxy_setup buildroot/%_bindir/cpcsp_proxy_setup
+install -D cpcsp_proxy_setup/cpcsp_proxy_setup %buildroot/%_bindir/cpcsp_proxy_setup
 
 %files -n %winepkgname
 %libwinedir/%winesodir/cpcsp_proxy.so
