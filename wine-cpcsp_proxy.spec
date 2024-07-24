@@ -14,7 +14,7 @@ URL: https://github.com/Etersoft/wine-cpcsp_proxy
 # Source-git: https://github.com/Etersoft/wine-cpcsp_proxy.git
 Source: %name-%version.tar
 
-BuildRequires: libwine-devel >= 6.23
+BuildRequires: libwine-devel >= 8
 
 ExclusiveArch: %ix86 x86_64
 
