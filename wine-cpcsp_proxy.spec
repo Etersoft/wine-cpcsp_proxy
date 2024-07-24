@@ -2,7 +2,7 @@
 %define optflags_lto %nil
 
 Name: wine-etersoft-cpcsp_proxy
-Version: 0.7.0
+Version: 0.7.1
 Release: eter1
 
 Summary: Proxy for using Linux CryptoPro in Windows applications with Wine
@@ -14,7 +14,7 @@ URL: https://github.com/Etersoft/wine-cpcsp_proxy
 # Source-git: https://github.com/Etersoft/wine-cpcsp_proxy.git
 Source: %name-%version.tar
 
-BuildRequires: libwine-devel >= 6.23
+BuildRequires: libwine-devel >= 8
 
 ExclusiveArch: %ix86 x86_64
 
@@ -108,6 +108,14 @@ install -D cpcsp_proxy_setup/cpcsp_proxy_setup %buildroot/%_bindir/cpcsp_proxy_s
 %_bindir/cpcsp_proxy_setup
 
 %changelog
+* Wed Jul 24 2024 Vitaly Lipatov <lav@altlinux.ru> 0.7.1-eter1
+- cpcsp_proxy_setup: delete old realization, replace with sh script for new cades.dll (eterbug #17551)
+- update sources to 23.07.2024
+ + cpcsp_proxy: Avoid loading/unloading proxy many times.
+ + cpcsp_proxy: Implement wow64_CertDllVerifyOCSPSigningCertificateChainPolicy()
+ + cpcsp_proxy: Implement wow64_CertDllVerifySignatureCertificateChainPolicy()
+ + cpcsp_proxy: Implement wow64_CertDllVerifyTimestampSigningCertificateChainPolicy()
+
 * Fri Jul 12 2024 Vitaly Lipatov <lav@altlinux.ru> 0.7.0-eter1
 - update the code to the new unixcall mode
 
