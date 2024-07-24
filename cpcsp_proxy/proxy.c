@@ -109,6 +109,8 @@ BOOL WINAPI DllMain(HINSTANCE hinst, DWORD reason, LPVOID reserved)
         TRACE("orig_I_CryptGetDefaultCryptProv => %p\n", orig_I_CryptGetDefaultCryptProv);
 
         DisableThreadLibraryCalls(hinst);
+        /* Avoid loading/unloading proxy */
+        LoadLibraryA("cpcsp_proxy.dll");
         break;
 
     case DLL_PROCESS_DETACH:
