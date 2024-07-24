@@ -688,7 +688,22 @@ static NTSTATUS proxy_CryptEnumOIDInfo(void *args)
     return STATUS_SUCCESS;
 }
 
-typedef struct _CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_STATUS
+struct CPSIGNATURE_EXTRA_CERT_CHAIN_POLICY_PARA
+{
+    DWORD cbSize;
+    FILETIME *pPrivateKeyUsedTime;
+};
+
+struct CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_PARA
+{
+    ULONG cbSize;
+    FILETIME *pPrivateKeyUsedTime;
+    ULONG cCertId;
+    struct OCSP_CERT_ID *rgCertId;
+    void *callback;
+};
+
+struct CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_STATUS
 {
     DWORD cbSize;
     DWORD dwError;
@@ -696,7 +711,7 @@ typedef struct _CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_STATUS
     LONG lElementIndex;
     BOOL fNoCheck;
     BOOL *rgCertIdStatus;
-} CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_STATUS;
+};
 
 static NTSTATUS proxy_CertDllVerifyCertificateChainPolicy(void *args)
 {
@@ -750,14 +765,19 @@ static NTSTATUS proxy_CertDllVerifyCertificateChainPolicy(void *args)
 
         if (!strcasecmp(params->policy, "{A4CC781E-04E9-425C-AAFD-1D74DA8DFAF6}"))
         {
-            CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_STATUS *extra = params->status->pvExtraPolicyStatus;
+            struct CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_PARA *para = params->para->pvExtraPolicyPara;
+            struct CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_STATUS *extra = params->status->pvExtraPolicyStatus;
+            ULONG i;
 
             TRACE("extra: fNoCheck %d, rgCertIdStatus %p\n", extra->fNoCheck, extra->rgCertIdStatus);
 
-            if (extra->rgCertIdStatus && !extra->rgCertIdStatus[0])
+            for (i = 0; i < para->cCertId; i++)
             {
-                WARN("extra: rgCertIdStatus[0] = %d: fake success\n", extra->rgCertIdStatus[0]);
-                extra->rgCertIdStatus[0] = 1;
+                if (!extra->rgCertIdStatus[i])
+                {
+                    WARN("extra: rgCertIdStatus[%u] = %d: fake success\n", i, extra->rgCertIdStatus[i]);
+                    extra->rgCertIdStatus[i] = 1;
+                }
             }
         }
     }
@@ -1368,53 +1388,6 @@ static NTSTATUS wow64_proxy_CPVerifySignature(void *args)
     return proxy_CPVerifySignature(&params);
 }
 
-static NTSTATUS wow64_CertDllVerifyOCSPSigningCertificateChainPolicy(void *args)
-{
-    FIXME(": stub\n");
-    return STATUS_NOT_IMPLEMENTED;
-}
-
-static NTSTATUS wow64_CertDllVerifyTimestampSigningCertificateChainPolicy(void *args)
-{
-    FIXME(": stub\n");
-    return STATUS_NOT_IMPLEMENTED;
-}
-
-static NTSTATUS wow64_CertDllVerifySignatureCertificateChainPolicy(void *args)
-{
-    FIXME(": stub\n");
-    return STATUS_NOT_IMPLEMENTED;
-}
-
-static NTSTATUS wow64_CertDllVerifyPrivateKeyUsagePeriodCertificateChainPolicy(void *args)
-{
-    FIXME(": stub\n");
-    return STATUS_NOT_IMPLEMENTED;
-}
-
-static NTSTATUS wow64_proxy_CertDllVerifyCertificateChainPolicy(void *args)
-{
-    struct
-    {
-        PTR32 policy;
-        PTR32 context;
-        PTR32 para;
-        PTR32 status;
-    } const *params32 = args;
-
-    if (!strcasecmp(ULongToPtr(params32->policy), "{A4CC781E-04E9-425C-AAFD-1D74DA8DFAF6}"))
-        return wow64_CertDllVerifyOCSPSigningCertificateChainPolicy(args);
-    else if (!strcasecmp(ULongToPtr(params32->policy), "{AF74EE92-A059-492F-9B4B-EAD239B22A1B}"))
-        return wow64_CertDllVerifyTimestampSigningCertificateChainPolicy(args);
-    else if (!strcasecmp(ULongToPtr(params32->policy), "{B52FF66F-13A5-402C-B958-A3A6B5300FB6}"))
-        return wow64_CertDllVerifySignatureCertificateChainPolicy(args);
-    else if (!strcasecmp(ULongToPtr(params32->policy), "{C03D5610-26C8-4B6F-9549-245B5B3AB743}"))
-        return wow64_CertDllVerifyPrivateKeyUsagePeriodCertificateChainPolicy(args);
-
-    FIXME("Unknown policy %s\n", debugstr_a(ULongToPtr(params32->policy)));
-    return STATUS_NOT_IMPLEMENTED;
-}
-
 static NTSTATUS wow64_proxy_GetDefaultProviderA(void *args)
 {
     struct
@@ -1856,6 +1829,483 @@ static NTSTATUS wow64_proxy_CryptEnumOIDInfo(void *args)
     proxy_CryptEnumOIDInfo(params);
 
     return STATUS_SUCCESS;
+}
+
+struct CRYPT_HASH_BLOB32
+{
+    ULONG cbData;
+    PTR32 pbData;
+};
+
+struct OCSP_CERT_ID
+{
+    CRYPT_ALGORITHM_IDENTIFIER HashAlgorithm;
+    CRYPT_HASH_BLOB IssuerNameHash;
+    CRYPT_HASH_BLOB IssuerKeyHash;
+    CRYPT_INTEGER_BLOB SerialNumber;
+};
+
+struct OCSP_CERT_ID32
+{
+    struct CRYPT_ALGORITHM_IDENTIFIER32 HashAlgorithm;
+    struct CRYPT_HASH_BLOB32 IssuerNameHash;
+    struct CRYPT_HASH_BLOB32 IssuerKeyHash;
+    struct CRYPT_INTEGER_BLOB32 SerialNumber;
+};
+
+struct CPTIMESTAMP_SIGNING_EXTRA_CERT_CHAIN_POLICY_PARA
+{
+    DWORD cbSize;
+    FILETIME *pPrivateKeyUsedTime;
+};
+
+struct CPTIMESTAMP_SIGNING_EXTRA_CERT_CHAIN_POLICY_PARA32
+{
+    DWORD cbSize;
+    PTR32 pPrivateKeyUsedTime;
+};
+
+struct CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_PARA32
+{
+    ULONG cbSize;
+    PTR32 pPrivateKeyUsedTime;
+    ULONG cCertId;
+    PTR32 rgCertId;
+    PTR32 callback;
+};
+
+struct CERT_TRUST_STATUS32
+{
+    ULONG dwErrorStatus;
+    ULONG dwInfoStatus;
+};
+
+struct CERT_CHAIN_ELEMENT32
+{
+    ULONG cbSize;
+    PTR32 pCertContext; /* PCCERT_CONTEXT */
+    struct CERT_TRUST_STATUS32 TrustStatus;
+    PTR32 pRevocationInfo; /* PCERT_REVOCATION_INFO */
+    PTR32 pIssuanceUsage; /* PCERT_ENHKEY_USAGE */
+    PTR32 pApplicationUsage; /* PCERT_ENHKEY_USAGE */
+    PTR32 pwszExtendedErrorInfo;
+};
+
+struct CERT_SIMPLE_CHAIN32
+{
+    ULONG cbSize;
+    struct CERT_TRUST_STATUS32 TrustStatus;
+    ULONG cElement;
+    PTR32 rgpElement; /* PCERT_CHAIN_ELEMENT */
+    PTR32 pTrustListInfo; /* PCERT_TRUST_LIST_INFO */
+    ULONG fHasRevocationFreshnessTime;
+    ULONG dwRevocationFreshnessTime;
+};
+
+struct CERT_CHAIN_CONTEXT32
+{
+    ULONG cbSize;
+    struct CERT_TRUST_STATUS32 TrustStatus;
+    ULONG cChain;
+    PTR32 rgpChain; /* PCERT_SIMPLE_CHAIN */
+    ULONG cLowerQualityChainContext;
+    PTR32 rgpLowerQualityChainContext; /* PCCERT_CHAIN_CONTEXT */
+    ULONG fHasRevocationFreshnessTime;
+    ULONG dwRevocationFreshnessTime;
+};
+
+static void copy_CERT_CHAIN_CONTEXT32_to_64(const struct CERT_CHAIN_CONTEXT32 *ctx32, CERT_CHAIN_CONTEXT *ctx)
+{
+    ULONG i;
+
+    ctx->cbSize = sizeof(*ctx);
+    ctx->TrustStatus.dwErrorStatus = ctx32->TrustStatus.dwErrorStatus;
+    ctx->TrustStatus.dwInfoStatus = ctx32->TrustStatus.dwInfoStatus;
+    ctx->cChain = ctx32->cChain;
+    if (ctx->cChain)
+    {
+        const PTR32 *rgpChain32 = UlongToPtr(ctx32->rgpChain);
+
+        ctx->rgpChain = malloc(ctx->cChain * sizeof(ctx->rgpChain[0]));
+        for (i = 0; i < ctx->cChain; i++)
+        {
+            const struct CERT_SIMPLE_CHAIN32 *chain32 = UlongToPtr(rgpChain32[i]);
+
+            ctx->rgpChain[i] = malloc(sizeof(CERT_SIMPLE_CHAIN));
+            ctx->rgpChain[i]->cbSize = sizeof(CERT_SIMPLE_CHAIN);
+            ctx->rgpChain[i]->TrustStatus.dwErrorStatus = chain32->TrustStatus.dwErrorStatus;
+            ctx->rgpChain[i]->TrustStatus.dwInfoStatus = chain32->TrustStatus.dwInfoStatus;
+            ctx->rgpChain[i]->cElement = chain32->cElement;
+            if (ctx->rgpChain[i]->cElement)
+            {
+                const PTR32 *rgpElement32 = UlongToPtr(chain32->rgpElement);
+                ULONG k;
+
+                ctx->rgpChain[i]->rgpElement = malloc(ctx->rgpChain[i]->cElement * sizeof(ctx->rgpChain[i]->rgpElement[0]));
+                for (k = 0; k < ctx->rgpChain[i]->cElement; k++)
+                {
+                    const struct CERT_CHAIN_ELEMENT32 *element32 = UlongToPtr(rgpElement32[k]);
+
+                    ctx->rgpChain[i]->rgpElement[k] = malloc(sizeof(CERT_CHAIN_ELEMENT));
+                    ctx->rgpChain[i]->rgpElement[k]->cbSize = sizeof(CERT_CHAIN_ELEMENT);
+                    ctx->rgpChain[i]->rgpElement[k]->pCertContext = CC_cache_entry(ULongToPtr(element32->pCertContext));
+                    ctx->rgpChain[i]->rgpElement[k]->TrustStatus.dwErrorStatus = element32->TrustStatus.dwErrorStatus;
+                    ctx->rgpChain[i]->rgpElement[k]->TrustStatus.dwInfoStatus = element32->TrustStatus.dwInfoStatus;
+                    if (element32->pRevocationInfo || element32->pIssuanceUsage || element32->pApplicationUsage || element32->pwszExtendedErrorInfo)
+                        FIXME("element32: pRevocationInfo = %#x, pIssuanceUsage = %#x, pApplicationUsage = %#x, pwszExtendedErrorInfo = %#x\n",
+                               element32->pRevocationInfo, element32->pIssuanceUsage, element32->pApplicationUsage, element32->pwszExtendedErrorInfo);
+                    ctx->rgpChain[i]->rgpElement[k]->pRevocationInfo = NULL;
+                    ctx->rgpChain[i]->rgpElement[k]->pIssuanceUsage = NULL;
+                    ctx->rgpChain[i]->rgpElement[k]->pApplicationUsage = NULL;
+                    ctx->rgpChain[i]->rgpElement[k]->pwszExtendedErrorInfo = NULL;
+                }
+            }
+            else
+                ctx->rgpChain[i]->rgpElement = NULL;
+            if (chain32->pTrustListInfo)
+                FIXME("chain32[%u]->pTrustListInfo = %#x\n", i, chain32->pTrustListInfo);
+            ctx->rgpChain[i]->pTrustListInfo = NULL;
+            ctx->rgpChain[i]->fHasRevocationFreshnessTime = chain32->fHasRevocationFreshnessTime;
+            ctx->rgpChain[i]->dwRevocationFreshnessTime = chain32->dwRevocationFreshnessTime;
+        }
+    }
+    else
+        ctx->rgpChain = NULL;
+    ctx->cLowerQualityChainContext = ctx32->cLowerQualityChainContext;
+    ctx->rgpLowerQualityChainContext = UlongToPtr(ctx32->rgpLowerQualityChainContext); /* PCCERT_CHAIN_CONTEXT */
+    ctx->fHasRevocationFreshnessTime = ctx32->fHasRevocationFreshnessTime;
+    ctx->dwRevocationFreshnessTime = ctx32->dwRevocationFreshnessTime;
+}
+
+struct CERT_CHAIN_POLICY_PARA32
+{
+    ULONG cbSize;
+    ULONG dwFlags;
+    PTR32 pvExtraPolicyPara;
+};
+
+static void copy_CERT_CHAIN_POLICY_PARA32_to_64(const struct CERT_CHAIN_POLICY_PARA32 *para32, CERT_CHAIN_POLICY_PARA *para)
+{
+    para->cbSize = sizeof(*para);
+    para->dwFlags = para32->dwFlags;
+    para->pvExtraPolicyPara = NULL;
+}
+
+struct CERT_CHAIN_POLICY_STATUS32
+{
+    DWORD cbSize;
+    DWORD dwError;
+    LONG lChainIndex;
+    LONG lElementIndex;
+    PTR32 pvExtraPolicyStatus;
+};
+
+struct CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_STATUS32
+{
+    DWORD cbSize;
+    DWORD dwError;
+    LONG lChainIndex;
+    LONG lElementIndex;
+    BOOL fNoCheck;
+    PTR32 rgCertIdStatus;
+};
+
+static void copy_CERT_CHAIN_POLICY_STATUS32_to_64(const struct CERT_CHAIN_POLICY_STATUS32 *status32, CERT_CHAIN_POLICY_STATUS *status)
+{
+    status->cbSize = status32->cbSize;
+    status->dwError = status32->dwError;
+    status->lChainIndex = status32->lChainIndex;
+    status->lElementIndex = status32->lElementIndex;
+    status->pvExtraPolicyStatus = NULL;
+}
+
+static void copy_CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_PARA32_to_64(const struct CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_PARA32 *para32,
+    struct CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_PARA *para)
+{
+    ULONG i;
+
+    para->cbSize = sizeof(*para);
+    para->pPrivateKeyUsedTime = ULongToPtr(para32->pPrivateKeyUsedTime);
+    if (para32->callback)
+        FIXME("para32->callback = %#x\n", para32->callback);
+    para->callback = NULL;
+    para->cCertId = para32->cCertId;
+    para->rgCertId = malloc(para->cCertId * sizeof(para->rgCertId[0]));
+    for (i = 0; i < para->cCertId; i++)
+    {
+        const struct OCSP_CERT_ID32 *rgCertId32 = ULongToPtr(para32->rgCertId);
+
+        para->rgCertId[i].HashAlgorithm.pszObjId = ULongToPtr(rgCertId32->HashAlgorithm.pszObjId);
+        para->rgCertId[i].HashAlgorithm.Parameters.cbData = rgCertId32->HashAlgorithm.Parameters.cbData;
+        para->rgCertId[i].HashAlgorithm.Parameters.pbData = ULongToPtr(rgCertId32->HashAlgorithm.Parameters.cbData);
+        para->rgCertId[i].IssuerNameHash.cbData = rgCertId32->IssuerNameHash.cbData;
+        para->rgCertId[i].IssuerNameHash.pbData = ULongToPtr(rgCertId32->IssuerNameHash.pbData);
+        para->rgCertId[i].IssuerKeyHash.cbData = rgCertId32->IssuerKeyHash.cbData;
+        para->rgCertId[i].IssuerKeyHash.pbData = ULongToPtr(rgCertId32->IssuerKeyHash.pbData);
+        para->rgCertId[i].SerialNumber.cbData = rgCertId32->SerialNumber.cbData;
+        para->rgCertId[i].SerialNumber.pbData = ULongToPtr(rgCertId32->SerialNumber.pbData);
+    }
+};
+
+static NTSTATUS wow64_CertDllVerifyOCSPSigningCertificateChainPolicy(void *args)
+{
+    struct
+    {
+        PTR32 policy;
+        PTR32 context;
+        PTR32 para;
+        PTR32 status;
+    } *params32 = args;
+    NTSTATUS status;
+    CERT_CHAIN_CONTEXT context;
+    CERT_CHAIN_POLICY_PARA para;
+    struct CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_PARA para_extra;
+    CERT_CHAIN_POLICY_STATUS policy_status;
+    struct CERT_CHAIN_POLICY_STATUS32 *policy_status32;
+    struct CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_STATUS status_extra;
+    struct VerifyCertificateChainPolicy_params params =
+    {
+        ULongToPtr(params32->policy),
+        &context,
+        NULL,
+        &policy_status
+    };
+
+    copy_CERT_CHAIN_CONTEXT32_to_64(ULongToPtr(params32->context), &context);
+    if (params32->para)
+    {
+        struct CERT_CHAIN_POLICY_PARA32 *para32 = ULongToPtr(params32->para);
+
+        copy_CERT_CHAIN_POLICY_PARA32_to_64(para32, &para);
+        if (para32->pvExtraPolicyPara)
+        {
+            const struct CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_PARA32 *para_extra32 = ULongToPtr(para32->pvExtraPolicyPara);
+
+            copy_CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_PARA32_to_64(para_extra32, &para_extra);
+
+            para.pvExtraPolicyPara = &para_extra;
+        }
+
+        params.para = &para;
+    }
+
+    policy_status32 = ULongToPtr(params32->status);
+    copy_CERT_CHAIN_POLICY_STATUS32_to_64(policy_status32, &policy_status);
+    if (policy_status32->pvExtraPolicyStatus)
+    {
+        struct CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_STATUS32 *status_extra32 = UlongToPtr(policy_status32->pvExtraPolicyStatus);
+
+        status_extra.cbSize = sizeof(status_extra);
+        status_extra.dwError = status_extra32->dwError;
+        status_extra.lChainIndex = status_extra32->lChainIndex;
+        status_extra.lElementIndex = status_extra32->lElementIndex;
+        status_extra.fNoCheck = status_extra32->fNoCheck;
+        status_extra.rgCertIdStatus = ULongToPtr(status_extra32->rgCertIdStatus);
+
+        policy_status.pvExtraPolicyStatus = &status_extra;
+    }
+
+    status = proxy_CertDllVerifyCertificateChainPolicy(&params);
+    if (!status)
+    {
+        policy_status32->cbSize = sizeof(*policy_status32);
+        policy_status32->dwError = policy_status.dwError;
+        policy_status32->lChainIndex = policy_status.lChainIndex;
+        policy_status32->lElementIndex = policy_status.lElementIndex;
+
+        if (policy_status32->pvExtraPolicyStatus)
+        {
+            const struct CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_STATUS *extra = policy_status.pvExtraPolicyStatus;
+            struct CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_STATUS32 *extra32 = UlongToPtr(policy_status32->pvExtraPolicyStatus);
+
+            extra32->cbSize = sizeof(*extra32);
+            extra32->dwError = extra->dwError;
+            extra32->lChainIndex = extra->lChainIndex;
+            extra32->lElementIndex = extra->lElementIndex;
+            extra32->fNoCheck = extra->fNoCheck;
+            /* there's no need to translate back extra32->rgCertIdStatus */
+        }
+    }
+
+    return status;
+}
+
+static NTSTATUS wow64_CertDllVerifyTimestampSigningCertificateChainPolicy(void *args)
+{
+    struct
+    {
+        PTR32 policy;
+        PTR32 context;
+        PTR32 para;
+        PTR32 status;
+    } *params32 = args;
+    NTSTATUS status;
+    CERT_CHAIN_CONTEXT context;
+    CERT_CHAIN_POLICY_PARA para;
+    struct CPTIMESTAMP_SIGNING_EXTRA_CERT_CHAIN_POLICY_PARA para_extra;
+    CERT_CHAIN_POLICY_STATUS policy_status;
+    struct CERT_CHAIN_POLICY_STATUS32 *policy_status32;
+    struct CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_STATUS status_extra;
+    struct VerifyCertificateChainPolicy_params params =
+    {
+        ULongToPtr(params32->policy),
+        &context,
+        NULL,
+        &policy_status
+    };
+
+    copy_CERT_CHAIN_CONTEXT32_to_64(ULongToPtr(params32->context), &context);
+    if (params32->para)
+    {
+        struct CERT_CHAIN_POLICY_PARA32 *para32 = ULongToPtr(params32->para);
+
+        copy_CERT_CHAIN_POLICY_PARA32_to_64(para32, &para);
+        if (para32->pvExtraPolicyPara)
+        {
+            const struct CPTIMESTAMP_SIGNING_EXTRA_CERT_CHAIN_POLICY_PARA32 *para_extra32 = ULongToPtr(para32->pvExtraPolicyPara);
+
+            para_extra.cbSize = sizeof(para_extra);
+            para_extra.pPrivateKeyUsedTime = ULongToPtr(para_extra32->pPrivateKeyUsedTime);
+
+            para.pvExtraPolicyPara = &para_extra;
+        }
+
+        params.para = &para;
+    }
+
+    policy_status32 = ULongToPtr(params32->status);
+    copy_CERT_CHAIN_POLICY_STATUS32_to_64(policy_status32, &policy_status);
+    if (policy_status32->pvExtraPolicyStatus)
+    {
+        struct CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_STATUS32 *status_extra32 = UlongToPtr(policy_status32->pvExtraPolicyStatus);
+
+        status_extra.cbSize = sizeof(status_extra);
+        status_extra.dwError = status_extra32->dwError;
+        status_extra.lChainIndex = status_extra32->lChainIndex;
+        status_extra.lElementIndex = status_extra32->lElementIndex;
+        status_extra.fNoCheck = status_extra32->fNoCheck;
+        status_extra.rgCertIdStatus = ULongToPtr(status_extra32->rgCertIdStatus);
+
+        policy_status.pvExtraPolicyStatus = &status_extra;
+    }
+
+    status = proxy_CertDllVerifyCertificateChainPolicy(&params);
+    if (!status)
+    {
+        policy_status32->cbSize = sizeof(*policy_status32);
+        policy_status32->dwError = policy_status.dwError;
+        policy_status32->lChainIndex = policy_status.lChainIndex;
+        policy_status32->lElementIndex = policy_status.lElementIndex;
+
+        if (policy_status32->pvExtraPolicyStatus)
+        {
+            const struct CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_STATUS *status_extra = policy_status.pvExtraPolicyStatus;
+            struct CPOCSP_SIGNING_EXTRA_CERT_CHAIN_POLICY_STATUS32 *status_extra32 = UlongToPtr(policy_status32->pvExtraPolicyStatus);
+
+            status_extra32->cbSize = sizeof(*status_extra32);
+            status_extra32->dwError = status_extra->dwError;
+            status_extra32->lChainIndex = status_extra->lChainIndex;
+            status_extra32->lElementIndex = status_extra->lElementIndex;
+            status_extra32->fNoCheck = status_extra->fNoCheck;
+            /* there's no need to translate back extra32->rgCertIdStatus */
+        }
+    }
+
+    return status;
+}
+
+struct CPSIGNATURE_EXTRA_CERT_CHAIN_POLICY_PARA32
+{
+    DWORD cbSize;
+    PTR32 pPrivateKeyUsedTime;
+};
+
+static NTSTATUS wow64_CertDllVerifySignatureCertificateChainPolicy(void *args)
+{
+    struct
+    {
+        PTR32 policy;
+        PTR32 context;
+        PTR32 para;
+        PTR32 status;
+    } *params32 = args;
+    NTSTATUS status;
+    CERT_CHAIN_CONTEXT context;
+    CERT_CHAIN_POLICY_PARA para;
+    struct CPSIGNATURE_EXTRA_CERT_CHAIN_POLICY_PARA para_extra;
+    CERT_CHAIN_POLICY_STATUS policy_status;
+    struct CERT_CHAIN_POLICY_STATUS32 *policy_status32;
+    struct VerifyCertificateChainPolicy_params params =
+    {
+        ULongToPtr(params32->policy),
+        &context,
+        NULL,
+        &policy_status
+    };
+
+    copy_CERT_CHAIN_CONTEXT32_to_64(ULongToPtr(params32->context), &context);
+    if (params32->para)
+    {
+        struct CERT_CHAIN_POLICY_PARA32 *para32 = ULongToPtr(params32->para);
+
+        copy_CERT_CHAIN_POLICY_PARA32_to_64(para32, &para);
+        if (para32->pvExtraPolicyPara)
+        {
+            const struct CPSIGNATURE_EXTRA_CERT_CHAIN_POLICY_PARA32 *para_extra32 = ULongToPtr(para32->pvExtraPolicyPara);
+
+            para_extra.cbSize = sizeof(para_extra);
+            para_extra.pPrivateKeyUsedTime = ULongToPtr(para_extra32->pPrivateKeyUsedTime);
+
+            para.pvExtraPolicyPara = &para_extra;
+        }
+
+        params.para = &para;
+    }
+
+    policy_status32 = ULongToPtr(params32->status);
+    copy_CERT_CHAIN_POLICY_STATUS32_to_64(policy_status32, &policy_status);
+    /* CPSIGNATURE_EXTRA_CERT_CHAIN_POLICY_STATUS doesn't contain pointers */
+    policy_status.pvExtraPolicyStatus = ULongToPtr(policy_status32->pvExtraPolicyStatus);
+
+    status = proxy_CertDllVerifyCertificateChainPolicy(&params);
+    if (!status)
+    {
+        policy_status32->cbSize = sizeof(*policy_status32);
+        policy_status32->dwError = policy_status.dwError;
+        policy_status32->lChainIndex = policy_status.lChainIndex;
+        policy_status32->lElementIndex = policy_status.lElementIndex;
+    }
+
+    return status;
+}
+
+static NTSTATUS wow64_CertDllVerifyPrivateKeyUsagePeriodCertificateChainPolicy(void *args)
+{
+    FIXME(": stub\n");
+    return STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS wow64_proxy_CertDllVerifyCertificateChainPolicy(void *args)
+{
+    struct
+    {
+        PTR32 policy;
+        PTR32 context;
+        PTR32 para;
+        PTR32 status;
+    } const *params32 = args;
+
+    if (!strcasecmp(ULongToPtr(params32->policy), "{A4CC781E-04E9-425C-AAFD-1D74DA8DFAF6}"))
+        return wow64_CertDllVerifyOCSPSigningCertificateChainPolicy(args);
+    else if (!strcasecmp(ULongToPtr(params32->policy), "{AF74EE92-A059-492F-9B4B-EAD239B22A1B}"))
+        return wow64_CertDllVerifyTimestampSigningCertificateChainPolicy(args);
+    else if (!strcasecmp(ULongToPtr(params32->policy), "{B52FF66F-13A5-402C-B958-A3A6B5300FB6}"))
+        return wow64_CertDllVerifySignatureCertificateChainPolicy(args);
+    else if (!strcasecmp(ULongToPtr(params32->policy), "{C03D5610-26C8-4B6F-9549-245B5B3AB743}"))
+        return wow64_CertDllVerifyPrivateKeyUsagePeriodCertificateChainPolicy(args);
+
+    FIXME("Unknown policy %s\n", debugstr_a(ULongToPtr(params32->policy)));
+    return STATUS_NOT_IMPLEMENTED;
 }
 
 const unixlib_entry_t __wine_unix_call_wow64_funcs[] =
