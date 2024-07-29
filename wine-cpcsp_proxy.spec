@@ -2,7 +2,7 @@
 %define optflags_lto %nil
 
 Name: wine-etersoft-cpcsp_proxy
-Version: 0.7.1
+Version: 0.7.2
 Release: eter1
 
 Summary: Proxy for using Linux CryptoPro in Windows applications with Wine
@@ -96,7 +96,8 @@ Proxy for using Linux CryptoPro in Windows applications with wine.
 %install
 mkdir -p %buildroot%libwinedir/{%winesodir,%winepedir}
 
-cp cpcsp_proxy/cpcsp_proxy.so %buildroot%libwinedir/%winesodir
+#cp cpcsp_proxy/cpcsp_proxy.so %buildroot%libwinedir/%winesodir
+cp prebuild/%winesodir/cpcsp_proxy.so %buildroot%libwinedir/%winesodir
 cp cpcsp_proxy/cpcsp_proxy.dll %buildroot%libwinedir/%winepedir
 
 mkdir -p %buildroot/%_bindir/
@@ -108,6 +109,9 @@ install -D cpcsp_proxy_setup/cpcsp_proxy_setup %buildroot/%_bindir/cpcsp_proxy_s
 %_bindir/cpcsp_proxy_setup
 
 %changelog
+* Mon Jul 29 2024 Vitaly Lipatov <lav@altlinux.ru> 0.7.2-eter1
+- use prebuilt unix binaries
+
 * Wed Jul 24 2024 Vitaly Lipatov <lav@altlinux.ru> 0.7.1-eter1
 - cpcsp_proxy_setup: delete old realization, replace with sh script for new cades.dll (eterbug #17551)
 - update sources to 23.07.2024
