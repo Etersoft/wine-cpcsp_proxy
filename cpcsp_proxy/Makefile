@@ -3,7 +3,7 @@ UNIXLIB  = cpcsp_proxy.so
 # -m32
 CROSSBUILD =
 LIBDIR = /usr/lib
-UNIXGCC  = winegcc $(CROSSBUILD) -DWINE_UNIX_LIB -fPIC
+UNIXGCC  = gcc $(CROSSBUILD) -DWINE_UNIX_LIB -fPIC -I/usr/include/wine/windows
 ifeq ($(LIBDIR),/usr/lib)
 WINEARCH = i686-windows
 UNIXARCH = i386-unix

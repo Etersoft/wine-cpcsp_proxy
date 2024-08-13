@@ -96,8 +96,7 @@ Proxy for using Linux CryptoPro in Windows applications with wine.
 %install
 mkdir -p %buildroot%libwinedir/{%winesodir,%winepedir}
 
-#cp cpcsp_proxy/cpcsp_proxy.so %buildroot%libwinedir/%winesodir
-cp prebuild/%winesodir/cpcsp_proxy.so %buildroot%libwinedir/%winesodir
+cp cpcsp_proxy/cpcsp_proxy.so %buildroot%libwinedir/%winesodir
 cp cpcsp_proxy/cpcsp_proxy.dll %buildroot%libwinedir/%winepedir
 
 mkdir -p %buildroot/%_bindir/
