@@ -3,7 +3,7 @@
 
 Name: wine-etersoft-cpcsp_proxy
 Version: 0.7.3
-Release: alt1
+Release: alt2
 
 Summary: Proxy for using Linux CryptoPro in Windows applications with Wine
 
@@ -108,6 +108,9 @@ install -D cpcsp_proxy_setup/cpcsp_proxy_setup %buildroot/%_bindir/cpcsp_proxy_s
 %_bindir/cpcsp_proxy_setup
 
 %changelog
+* Wed Aug 14 2024 Vitaly Lipatov <lav@altlinux.ru> 0.7.3-alt2
+- makefile: don't link with ntdll
+
 * Tue Aug 13 2024 Vitaly Lipatov <lav@altlinux.ru> 0.7.3-alt1
 - build .so part with gcc
 - remove prebuild part
