@@ -16,7 +16,8 @@ WINEGCC  = winegcc -b $(WINEARCH) -D__WINE_PE_BUILD
 CFLAGS   = -g -O2 -Wall -D__WINESRC__
 IMPORTS  = ntdll kernel32 crypt32 advapi32
 LIBS     = $(IMPORTS:%=-l%)
-UNIXLIBS = -ldl $(WINELIBDIR)/$(UNIXARCH)/ntdll.so
+UNIXLIBS = -ldl
+#UNIXLIBS = -ldl $(WINELIBDIR)/$(UNIXARCH)/ntdll.so
 DEPS     = Makefile api_hook.h
 UNIXDEPS = Makefile api_hook.h unixlib.h
 OBJ      = convert.cross.o api_hook.cross.o proxy.cross.o cpcsp_proxy.spec
