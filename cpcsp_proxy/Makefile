@@ -11,8 +11,18 @@ else
 WINEARCH = x86_64-windows
 UNIXARCH = x86_64-unix
 endif
+
 WINELIBDIR = $(LIBDIR)/wine-etersoft
+
+#
+ifeq ($(shell test -e $(WINELIBDIR)/$(UNIXARCH)/ntdll.dll.so || test "$(TARGETDLL)" = cpcsp_proxy.dll.so && echo -n yes),yes)
+WINEGCC = winegcc
+TARGETDLL=cpcsp_proxy.dll.so
+else
 WINEGCC  = winegcc -b $(WINEARCH) -D__WINE_PE_BUILD
+TARGETDLL=cpcsp_proxy.dll
+endif
+
 CFLAGS   = -g -O2 -Wall -D__WINESRC__
 IMPORTS  = ntdll kernel32 crypt32 advapi32
 LIBS     = $(IMPORTS:%=-l%)
@@ -23,7 +33,7 @@ UNIXDEPS = Makefile api_hook.h unixlib.h
 OBJ      = convert.cross.o api_hook.cross.o proxy.cross.o cpcsp_proxy.spec
 UNIXOBJ  = unixlib.o
 
-all: cpcsp_proxy.so cpcsp_proxy.dll
+all: cpcsp_proxy.so $(TARGETDLL)
 
 %.cross.o: %.c $(DEPS)
 	$(WINEGCC) -c -o $@ $< $(CFLAGS)
@@ -36,6 +46,10 @@ cpcsp_proxy.so: $(UNIXOBJ)
 	#strip $@
 
 cpcsp_proxy.dll: $(OBJ)
+	$(WINEGCC) -o $@ $^ -shared -Wl,--wine-builtin $(CFLAGS) $(LIBS)
+	#strip $@
+
+cpcsp_proxy.dll.so: $(OBJ)
 	$(WINEGCC) -o $@ $^ -shared -Wl,--wine-builtin $(CFLAGS) $(LIBS)
 	#strip $@
 
