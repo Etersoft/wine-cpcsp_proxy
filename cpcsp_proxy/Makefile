@@ -1,22 +1,27 @@
 MODULE   = cpcsp_proxy.dll
 UNIXLIB  = cpcsp_proxy.so
-# -m32
+
 CROSSBUILD =
-LIBDIR = /usr/lib
-UNIXGCC  = gcc $(CROSSBUILD) -DWINE_UNIX_LIB -fPIC -I/usr/include/wine/windows
-ifeq ($(LIBDIR),/usr/lib)
-WINEARCH = i686-windows
-UNIXARCH = i386-unix
-else
+
+ifeq ($(shell echo $(LIBDIR) | grep -q 64 && echo -n x86_64),x86_64)
 WINEARCH = x86_64-windows
 UNIXARCH = x86_64-unix
+else
+WINEARCH = i686-windows
+UNIXARCH = i386-unix
+ifeq ($(shell arch),x86_64)
+CROSSBUILD = -m32
 endif
+endif
+
+LIBDIR = /usr/lib
+UNIXGCC  = gcc $(CROSSBUILD) -DWINE_UNIX_LIB -fPIC -I/usr/include/wine/windows
 
 WINELIBDIR = $(LIBDIR)/wine-etersoft
 
 #
 ifeq ($(shell test -e $(WINELIBDIR)/$(UNIXARCH)/ntdll.dll.so || test "$(TARGETDLL)" = cpcsp_proxy.dll.so && echo -n yes),yes)
-WINEGCC = winegcc
+WINEGCC = winegcc $(CROSSBUILD)
 TARGETDLL=cpcsp_proxy.dll.so
 else
 WINEGCC  = winegcc -b $(WINEARCH) -D__WINE_PE_BUILD
