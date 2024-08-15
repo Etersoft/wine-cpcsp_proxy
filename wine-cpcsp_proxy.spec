@@ -3,7 +3,7 @@
 
 Name: wine-etersoft-cpcsp_proxy
 Version: 0.7.3
-Release: alt2
+Release: alt3
 
 Summary: Proxy for using Linux CryptoPro in Windows applications with Wine
 
@@ -28,6 +28,9 @@ ExclusiveArch: %ix86 x86_64
 
 
 %define libwinedir %_libdir/wine-etersoft
+
+# TODO: use mingw detection from wine or just wait for total PE using
+%def_without pebuild
 
 # lib.req: ERROR: /tmp/.private/lav/wine-cpcsp_proxy-buildroot/usr/lib64/wine/x86_64-unix/cpcsp_proxy.so: library ntdll.so not found
 AutoReq: no
@@ -91,23 +94,43 @@ Proxy for using Linux CryptoPro in Windows applications with wine.
 %setup
 
 %build
-%make_build -C cpcsp_proxy LIBDIR=%_libdir
+%make_build -C cpcsp_proxy \
+    LIBDIR=%_libdir \
+%if_with pebuild
+    TARGETDLL=cpcsp_proxy.dll \
+%else
+    TARGETDLL=cpcsp_proxy.dll.so \
+%endif
+    %nil
 
 %install
 mkdir -p %buildroot%libwinedir/{%winesodir,%winepedir}
 
 cp cpcsp_proxy/cpcsp_proxy.so %buildroot%libwinedir/%winesodir
+
+%if_with pebuild
 cp cpcsp_proxy/cpcsp_proxy.dll %buildroot%libwinedir/%winepedir
+%else
+cp cpcsp_proxy/cpcsp_proxy.dll.so %buildroot%libwinedir/%winesodir
+%endif
 
 mkdir -p %buildroot/%_bindir/
 install -D cpcsp_proxy_setup/cpcsp_proxy_setup %buildroot/%_bindir/cpcsp_proxy_setup
 
 %files -n %winepkgname
 %libwinedir/%winesodir/cpcsp_proxy.so
+%if_with pebuild
 %libwinedir/%winepedir/cpcsp_proxy.dll
+%else
+%libwinedir/%winesodir/cpcsp_proxy.dll.so
+%endif
 %_bindir/cpcsp_proxy_setup
 
 %changelog
+* Thu Aug 15 2024 Vitaly Lipatov <lav@altlinux.ru> 0.7.3-alt3
+- makefile: build cpcsp_proxy.dll.so always
+- makefile: use -m32 for cross arch compiling
+
 * Wed Aug 14 2024 Vitaly Lipatov <lav@altlinux.ru> 0.7.3-alt2
 - makefile: don't link with ntdll
 
