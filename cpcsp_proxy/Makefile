@@ -3,6 +3,9 @@ UNIXLIB  = cpcsp_proxy.so
 
 CROSSBUILD =
 
+LIBDIR = /usr/lib
+#LIBDIR = /usr/lib/x86_64-linux-gnu
+
 ifeq ($(shell echo $(LIBDIR) | grep -q 64 && echo -n x86_64),x86_64)
 WINEARCH = x86_64-windows
 UNIXARCH = x86_64-unix
@@ -14,13 +17,12 @@ CROSSBUILD = -m32
 endif
 endif
 
-LIBDIR = /usr/lib
 UNIXGCC  = gcc $(CROSSBUILD) -DWINE_UNIX_LIB -fPIC -I/usr/include/wine/windows
 
 WINELIBDIR = $(LIBDIR)/wine-etersoft
 
 #
-ifeq ($(shell test -e $(WINELIBDIR)/$(UNIXARCH)/ntdll.dll.so || test "$(TARGETDLL)" = cpcsp_proxy.dll.so && echo -n yes),yes)
+ifeq ($(shell test -e $(WINELIBDIR)/$(UNIXARCH)/ntdll.dll.so || ! test "$(TARGETDLL)" = cpcsp_proxy.dll && echo -n yes),yes)
 WINEGCC = winegcc $(CROSSBUILD)
 TARGETDLL=cpcsp_proxy.dll.so
 else
@@ -31,8 +33,8 @@ endif
 CFLAGS   = -g -O2 -Wall -D__WINESRC__
 IMPORTS  = ntdll kernel32 crypt32 advapi32
 LIBS     = $(IMPORTS:%=-l%)
-UNIXLIBS = -ldl
-#UNIXLIBS = -ldl $(WINELIBDIR)/$(UNIXARCH)/ntdll.so
+#UNIXLIBS = -ldl
+UNIXLIBS = -ldl $(WINELIBDIR)/$(UNIXARCH)/ntdll.so
 DEPS     = Makefile api_hook.h
 UNIXDEPS = Makefile api_hook.h unixlib.h
 OBJ      = convert.cross.o api_hook.cross.o proxy.cross.o cpcsp_proxy.spec
@@ -50,9 +52,14 @@ cpcsp_proxy.so: $(UNIXOBJ)
 	$(UNIXGCC) -o $@ $^ -shared $(CFLAGS) $(UNIXLIBS)
 	#strip $@
 
+ifeq ($(TARGETDLL),cpcsp_proxy.dll)
 cpcsp_proxy.dll: $(OBJ)
 	$(WINEGCC) -o $@ $^ -shared -Wl,--wine-builtin $(CFLAGS) $(LIBS)
 	#strip $@
+else
+cpcsp_proxy.dll: cpcsp_proxy.spec
+	$(WINEGCC) -o $@ -Wb,--fake-module -shared $^ -mno-cygwin
+endif
 
 cpcsp_proxy.dll.so: $(OBJ)
 	$(WINEGCC) -o $@ $^ -shared -Wl,--wine-builtin $(CFLAGS) $(LIBS)
