@@ -6,13 +6,28 @@ fatal()
     exit 1
 }
 
+
 register_cades(){
-    "$WINE" rundll32 cpcsp_proxy.dll,Install || fatal "32-bit cades has not been registered"
+    W_SYSTEM32_DLLS_WIN="C:\\windows\\syswow64"    # path to access 32-bit dlls on win32/win64
+    W_SYSTEM64_DLLS_WIN64="C:\\windows\\system32"  # path to access 64-bit dlls from 64-bit apps
+
+    PREFIXARCH="$(grep '#arch' $WINEPREFIX/system.reg | cut -d "=" -f2)"
+
     echo "32-bit cades.dll has been registered"
     case $PREFIXARCH in
         win64)
-            "$WINE"64 rundll32 cpcsp_proxy.dll,Install
-            echo "64-bit cades.dll has been registered" || fatal "64-bit cades has not been registered"
+            echo "Registering 64-bit cpcsp_proxy.dll ..."
+            "$WINE" regsvr32 /s /n /i cpcsp_proxy.dll || fatal "64-bit cpcsp_proxy.dll has not been registered"
+            echo "64-bit cpcsp_proxy.dll has been registered"
+
+            echo "Registering 32-bit cpcsp_proxy.dll ..."
+            "$WINE" "${W_SYSTEM32_DLLS_WIN}\\regsvr32.exe" /s /n /i cpcsp_proxy.dll || fatal "32-bit cpcsp_proxy.dll has not been registered"
+            echo "32-bit cpcsp_proxy.dll has been registered"
+            ;;
+        *)
+            echo "Registering 32-bit cpcsp_proxy.dll ..."
+            "$WINE" regsvr32 /s /n /i cpcsp_proxy.dll || fatal "32-bit cpcsp_proxy.dll has not been registered"
+            echo "32-bit cpcsp_proxy.dll has been registered"
             ;;
     esac
 }
@@ -25,7 +40,5 @@ register_cades(){
 
 # Если нет system.reg, завершить wineserver, чтобы не было проблем с определением архитектуры префикса
 [ -e "$WINEPREFIX/system.reg" ] || wineserver -k
-
-PREFIXARCH="$(grep '#arch' $WINEPREFIX/system.reg | cut -d "=" -f2)"
 
 register_cades
