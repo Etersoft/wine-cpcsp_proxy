@@ -3,7 +3,7 @@
 
 Name: wine-etersoft-cpcsp_proxy
 Version: 0.7.3
-Release: alt4
+Release: alt5
 
 Summary: Proxy for using Linux CryptoPro in Windows applications with Wine
 
@@ -14,23 +14,36 @@ URL: https://github.com/Etersoft/wine-cpcsp_proxy
 # Source-git: https://github.com/Etersoft/wine-cpcsp_proxy.git
 Source: %name-%version.tar
 
-BuildRequires: libwine-devel >= 8
+BuildRequires: libwine-devel >= 9
 
 ExclusiveArch: %ix86 x86_64
 
+# TODO: use mingw detection from wine or just wait for total PE using
+%def_with pebuild
+%def_with wow64
+
+# default for unsupported arches
+%define winepkgname wine-etersoft-cpcsp_proxy
+
 %ifarch x86_64 aarch64
-  %def_with build64
-  %define winepkgname wine-etersoft-cpcsp_proxy
-%else
-  %def_without build64
-  %define winepkgname wine32-etersoft-cpcsp_proxy
+    %def_with build64
+    %define winearch wine64
+    %define winepkgname wine-etersoft-cpcsp_proxy
 %endif
 
+# workaround for https://bugzilla.altlinux.org/38130
+# buildwow64 = _arch = x86_64  && with wow64
+%if "%_arch" == "x86_64" && %{expand:%%{?_with_wow64:1}%%{!?_with_wow64:0}}
+    %def_with buildwow64
+    %undefine _with_build64
+%endif
+
+%ifarch %ix86
+    %def_without build64
+    %define winepkgname wine32-etersoft-cpcsp_proxy
+%endif
 
 %define libwinedir %_libdir/wine-etersoft
-
-# TODO: use mingw detection from wine or just wait for total PE using
-%def_without pebuild
 
 # lib.req: ERROR: /tmp/.private/lav/wine-cpcsp_proxy-buildroot/usr/lib64/wine/x86_64-unix/cpcsp_proxy.so: library ntdll.so not found
 AutoReq: no
@@ -53,6 +66,7 @@ AutoReq: no
 %define winepedir aarch64-windows
 %define winesodir aarch64-unix
 %endif
+%define winepe32dir i386-windows
 
 %add_verify_elf_skiplist %libwinedir/%winesodir/cpcsp_proxy.so
 %add_verify_elf_skiplist %libwinedir/%winesodir/cpcsp_proxy.dll.so
@@ -95,6 +109,9 @@ Proxy for using Linux CryptoPro in Windows applications with wine.
 
 %prep
 %setup
+%if_with buildwow64
+cp -a cpcsp_proxy cpcsp_proxy_wow64
+%endif
 
 %build
 %make_build -C cpcsp_proxy \
@@ -106,11 +123,24 @@ Proxy for using Linux CryptoPro in Windows applications with wine.
 %endif
     %nil
 
+%if_with buildwow64
+%make_build -C cpcsp_proxy_wow64 \
+    LIBDIR=%_libdir \
+    WOW64BUILD=yes \
+    TARGETDLL=cpcsp_proxy.dll \
+    cpcsp_proxy.dll
+    %nil
+%endif
+
 %install
 mkdir -p %buildroot%libwinedir/{%winesodir,%winepedir}
 
 cp cpcsp_proxy/cpcsp_proxy.so %buildroot%libwinedir/%winesodir
 cp cpcsp_proxy/cpcsp_proxy.dll %buildroot%libwinedir/%winepedir
+%if_with buildwow64
+mkdir -p %buildroot%libwinedir/%winepe32dir
+cp cpcsp_proxy_wow64/cpcsp_proxy.dll %buildroot%libwinedir/%winepe32dir
+%endif
 
 %if_without pebuild
 cp cpcsp_proxy/cpcsp_proxy.dll.so %buildroot%libwinedir/%winesodir
@@ -122,12 +152,19 @@ install -D cpcsp_proxy_setup/cpcsp_proxy_setup %buildroot/%_bindir/cpcsp_proxy_s
 %files -n %winepkgname
 %libwinedir/%winesodir/cpcsp_proxy.so
 %libwinedir/%winepedir/cpcsp_proxy.dll
+%if_with buildwow64
+%libwinedir/%winepe32dir/cpcsp_proxy.dll
+%endif
 %if_without pebuild
 %libwinedir/%winesodir/cpcsp_proxy.dll.so
 %endif
 %_bindir/cpcsp_proxy_setup
 
 %changelog
+* Thu May 15 2025 Vitaly Lipatov <lav@altlinux.ru> 0.7.3-alt5
+- enable PE build
+- enable wow64 build
+
 * Tue Aug 20 2024 Vitaly Lipatov <lav@altlinux.ru> 0.7.3-alt4
 - makefile: return linking with ntdll.so, add fake cpcsp_proxy.dll for ELF build
 - always pack cpcsp_proxy.dll

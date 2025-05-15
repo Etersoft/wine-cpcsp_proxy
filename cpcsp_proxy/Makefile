@@ -2,6 +2,7 @@ MODULE   = cpcsp_proxy.dll
 UNIXLIB  = cpcsp_proxy.so
 
 CROSSBUILD =
+WOW64BUILD =
 
 LIBDIR = /usr/lib
 #LIBDIR = /usr/lib/x86_64-linux-gnu
@@ -12,6 +13,14 @@ UNIXARCH = x86_64-unix
 else
 WINEARCH = i686-windows
 UNIXARCH = i386-unix
+ifeq ($(shell arch),x86_64)
+CROSSBUILD = -m32
+endif
+endif
+
+ifeq ($(WOW64BUILD),yes)
+WINEARCH = i686-windows
+UNIXARCH =
 ifeq ($(shell arch),x86_64)
 CROSSBUILD = -m32
 endif
